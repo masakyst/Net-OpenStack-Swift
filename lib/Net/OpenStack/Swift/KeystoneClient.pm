@@ -48,7 +48,7 @@ sub get_tokens {
 }
 
 
-package Net::OpenStack::Swift::KeystoneClient::V2;
+package Net::OpenStack::Swift::KeystoneClient::V2_0;
 use strict;
 use warnings;
 use Moo;

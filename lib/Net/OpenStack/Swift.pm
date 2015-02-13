@@ -18,10 +18,13 @@ use Net::OpenStack::Swift::KeystoneClient;
 
 our $VERSION = "0.01";
 
+has auth_version => (is => 'rw', required => 1, default => sub {"2.0"}); 
 has auth_url     => (is => 'rw', required => 1); 
 has user         => (is => 'rw', required => 1); 
 has password     => (is => 'rw', required => 1); 
 has tenant_name  => (is => 'rw');
+has storage_url  => (is => 'rw');
+has token        => (is => 'rw');
 has verify_ssl   => (is => 'ro', default => sub {! $ENV{OSCOMPUTE_INSECURE}});
 has agent => (
     is      => 'rw',
@@ -35,26 +38,29 @@ has agent => (
     },  
 );
 
-
-# V2
-sub get_auth_keystoneclient {
+sub get_auth {
     my $self = shift;
-    my $ksclient = Net::OpenStack::Swift::KeystoneClient::V2->new(
+    (my $load_version = $self->auth_version) =~ s/\./_/;
+    my $ksclient = "Net::OpenStack::Swift::KeystoneClient::V${load_version}"->new(
         auth_url => $self->auth_url,
         user     => $self->user,
         password => $self->password,
         tenant_name => $self->tenant_name,
     );
     #print Dumper($ksclient);
-    return $ksclient;
+    my ($storage_url, $token) = $ksclient->get_tokens();
+    $self->storage_url($storage_url);
+    $self->token($token);
+    #return ($self, $storage_url, $token);
+    return $self;
+    #return $ksclient->get_tokens();
 }
 
 sub get_account {
     my $self = shift;
-    my $ksclient = $self->get_auth_keystoneclient();
-    my ($storage_url, $token) = $ksclient->get_tokens();
-    print Dumper($storage_url);
-    print Dumper($token);
+    my ($storage_url, $token) = @_;
+    $storage_url ||= $self->storage_url;
+    $token       ||= $self->token;
     my $access_url = sprintf "%s?%s", ($storage_url, "format=json");
     #[format=>'json', marker=>'', limit=>'', prefix=>'', end_marker=>''],      # form data (HashRef/FileHandle are also okay)
     #['Content-Type'=>'application/json',
@@ -66,32 +72,6 @@ sub get_account {
     my $body_params = from_json($res->content);
     my %headers = $res->headers->flatten();
     return (\%headers, $body_params);
-
- 
-    
-
-
-}
-
-sub get_servers {
-    my $self = shift;
-
-    my $ksclient = $self->get_auth_keystoneclient();
-
-    my ($storage_url, $token) = $ksclient->get_tokens();
-    print Dumper($storage_url);
-    print Dumper($token);
-
-    #print Dumper(to_json($data));
-
-    #my $res = $self->agent->post(
-    #    $self->auth_url."/tokens",
-    #    ['Content-Type'=>'application/json'], # headers
-    #    to_json($data),      # form data (HashRef/FileHandle are also okay)
-    #);
-    #print Dumper($res);
-    #die $res->status_line unless $res->is_success;
-    #print $res->content;
 }
 
 
