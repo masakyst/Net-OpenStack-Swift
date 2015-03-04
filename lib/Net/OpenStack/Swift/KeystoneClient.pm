@@ -2,10 +2,12 @@ package Net::OpenStack::Swift::KeystoneClient::Base;
 use strict;
 use warnings;
 use Moo;
-use JSON qw(from_json to_json);
+use JSON;
 use Furl;
 use Data::Dumper;
 
+has auth_token   => (is => 'rw'); 
+has service_catalog => (is => 'rw'); 
 has auth_url     => (is => 'rw', required => 1); 
 has user         => (is => 'rw', required => 1); 
 has password     => (is => 'rw', required => 1); 
@@ -31,20 +33,19 @@ has agent => (
 
 sub get_auth_params { die; }
 
-sub get_tokens {
-    my $self = shift;
-    #print Dumper(to_json($self->get_auth_params));
-    my $res = $self->agent->post(
-        $self->auth_url."/tokens",
-        ['Content-Type'=>'application/json'], # headers
-        to_json($self->get_auth_params),      # form data (HashRef/FileHandle are also okay)
-    );
-    #print Dumper($res);
-    die $res->status_line unless $res->is_success;
-    my $body_params = from_json($res->content);
-    #print Dumper($body_params);
-    return ($body_params->{access}->{serviceCatalog}->[0]->{endpoints}->[0]->{publicURL}, # endpoints 'type' => 'object-store'
-            $body_params->{access}->{token}->{id});                           # token id
+sub service_catalog_url_for {
+    my ($self, %args) = @_;
+    print Dumper(\%args);
+    my $endpoint;
+    # このservice_catalog_url_forはregionでもしぼらないといけない
+    foreach my $service_catelog (@{ $self->service_catalog }) {
+        if ($args{service_type} eq $service_catelog->{type}) {
+            # endpointsの中は配列なので複数ある可能性がありそう。複数あった場合どうなるんだろう
+            $endpoint = $service_catelog->{endpoints}->[0]->{$args{endpoint_type}}; 
+        } 
+    }
+    # endpoint見つからないエラー
+    return $endpoint;
 }
 
 
@@ -53,6 +54,7 @@ use strict;
 use warnings;
 use Moo;
 extends 'Net::OpenStack::Swift::KeystoneClient::Base';
+use Data::Dumper;
 
 sub get_auth_params {
     my $self = shift;
@@ -67,6 +69,35 @@ sub get_auth_params {
     };
  
 }
+
+sub auth {
+    my $self = shift;
+    my $res = $self->agent->post(
+        $self->auth_url."/tokens",
+        ['Content-Type'=>'application/json'], # headers
+        JSON::to_json($self->get_auth_params),      # form data (HashRef/FileHandle are also okay)
+    );
+    #print Dumper($res);
+    die $res->status_line unless $res->is_success;
+    my $body_params = JSON::from_json($res->content);
+    #print Dumper($body_params);
+    $self->auth_token($body_params->{access}->{token}->{id});
+    $self->service_catalog($body_params->{access}->{serviceCatalog});
+    return $self->auth_token();
+
+    #my $endpoint;
+    ## このservice_catalog_url_forはregionでもしぼらないといけない
+    #foreach my $service_catelog (@{ $body_params->{access}->{serviceCatalog} }) {
+    #    if ('object-store' eq $service_catelog->{type}) {
+    #        # endpointsの中は配列なので複数ある可能性がありそう。複数あった場合どうなるんだろう
+    #        $endpoint = $service_catelog->{endpoints}->[0]->{publicURL}; 
+    #    } 
+    #}
+    #return ($body_params->{access}->{serviceCatalog}->[0]->{endpoints}->[0]->{publicURL}, # endpoints 'type' => 'object-store'
+    #        $body_params->{access}->{token}->{id});                           # token id
+}
+
+
 
 package Net::OpenStack::Swift::KeystoneClient::V3;
 use strict;

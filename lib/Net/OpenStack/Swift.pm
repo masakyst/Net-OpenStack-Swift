@@ -5,6 +5,9 @@ package Net::OpenStack::Swift;
 V3
 http://docs.openstack.org/developer/keystone/api_curl_examples.html
 
+ConoHa
+https://www.conoha.jp/guide/guide.php?g=52
+
 =cut
 
 use strict;
@@ -41,6 +44,7 @@ has agent => (
 sub get_auth {
     my $self = shift;
     (my $load_version = $self->auth_version) =~ s/\./_/;
+    # 認証チェック
     my $ksclient = "Net::OpenStack::Swift::KeystoneClient::V${load_version}"->new(
         auth_url => $self->auth_url,
         user     => $self->user,
@@ -48,11 +52,17 @@ sub get_auth {
         tenant_name => $self->tenant_name,
     );
     #print Dumper($ksclient);
-    my ($storage_url, $token) = $ksclient->get_tokens();
-    $self->storage_url($storage_url);
-    $self->token($token);
-    #return ($self, $storage_url, $token);
-    return $self;
+    my $auth_token = $ksclient->auth();
+    my $endpoint = $ksclient->service_catalog_url_for(service_type=>'object-store', endpoint_type=>'publicURL');
+    $self->token($auth_token);
+    $self->storage_url($endpoint);
+    return ($endpoint, $auth_token);
+   
+    #my ($storage_url, $token) = $ksclient->get_tokens();
+    #$self->storage_url($storage_url);
+    #$self->token($token);
+    ##return ($self, $storage_url, $token);
+    ##return $self;
     #return $ksclient->get_tokens();
 }
 
