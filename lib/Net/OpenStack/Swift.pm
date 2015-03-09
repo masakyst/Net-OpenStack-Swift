@@ -92,7 +92,53 @@ sub head_account {
     return \%headers;
 }
 
+sub post_account {
+    die;
+}
 
+sub get_container {
+    die;
+}
+
+sub head_container {
+    die;
+}
+
+sub put_container {
+    die;
+}
+
+sub post_container {
+    die;
+}
+
+sub delete_container {
+    die;
+}
+
+sub get_object {
+    die;
+}
+
+sub head_object {
+    die;
+}
+
+sub put_object {
+    die;
+}
+
+sub post_object {
+    die;
+}
+
+sub delete_object {
+    die;
+}
+
+sub get_capabilities {
+    die;
+}
 
 
 1;
