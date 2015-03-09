@@ -2,6 +2,9 @@ package Net::OpenStack::Swift;
 
 =pod
 
+python swift clientの説明
+http://blog.bit-isle.jp/bird/2013/03/42
+
 V3
 http://docs.openstack.org/developer/keystone/api_curl_examples.html
 
@@ -69,11 +72,27 @@ sub get_account {
         $access_url,
         ['X-Auth-Token'=>$token], 
     );
-    croak "request failed: ".$res->status_line unless $res->is_success;
+    croak "Account GET failed: ".$res->status_line unless $res->is_success;
     my $body_params = from_json($res->content);
     my %headers = $res->headers->flatten();
     return (\%headers, $body_params);
 }
+
+sub head_account {
+    my $self = shift;
+    my ($storage_url, $token) = @_;
+    $storage_url ||= $self->storage_url;
+    $token       ||= $self->token;
+    my $res = $self->agent->get(
+        $storage_url,
+        ['X-Auth-Token'=>$token], 
+    );
+    croak "Account HEAD failed: ".$res->status_line unless $res->is_success;
+    my %headers = $res->headers->flatten();
+    return \%headers;
+}
+
+
 
 
 1;
