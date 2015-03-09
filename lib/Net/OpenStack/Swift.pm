@@ -17,8 +17,8 @@ use strict;
 use warnings;
 use Carp;
 use Moo;
+use namespace::clean;
 use JSON;
-#use namespace::clean;
 use Data::Dumper;
 use Net::OpenStack::Swift::InnerKeystone;
 

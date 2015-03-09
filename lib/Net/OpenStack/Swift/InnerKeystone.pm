@@ -2,6 +2,7 @@ package Net::OpenStack::Swift::InnerKeystone::Base;
 use strict;
 use warnings;
 use Moo;
+use namespace::clean;
 use JSON;
 use Furl;
 use Data::Dumper;
