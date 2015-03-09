@@ -150,7 +150,25 @@ sub head_object {
 }
 
 sub put_object {
-    die;
+    my $self = shift;
+    my ($storage_url, $token, $container_name, $object_name, $content, $content_length, $content_type) = @_;
+    $storage_url ||= $self->storage_url;
+    $token       ||= $self->token;
+    # todo: container_nameにquote必須らしい
+    my $object_url = sprintf "%s/%s/%s", $storage_url, $container_name, $object_name; 
+    # todo: この辺追加オプションヘッダーも考慮する事
+    my $res = $self->agent->put(
+        $object_url,
+        ['X-Auth-Token'   => $token, 
+         'Content-Length' => $content_length, 
+         'Content-Type'   => $content_type], 
+        $content,
+    );
+    croak "Object PUT failed: ".$res->status_line unless $res->is_success;
+    my %headers = $res->headers->flatten();
+    my $etag = $headers{etag};
+    $etag =~ s/^\s*(.*?)\s*$/$1/; # delete spaces
+    return $etag;
 }
 
 sub post_object {
