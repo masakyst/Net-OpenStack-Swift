@@ -12,12 +12,12 @@ https://www.conoha.jp/guide/guide.php?g=52
 
 use strict;
 use warnings;
+use Carp;
 use Moo;
 use JSON;
 #use namespace::clean;
-#use Carp;
 use Data::Dumper;
-use Net::OpenStack::Swift::KeystoneClient;
+use Net::OpenStack::Swift::InnerKeystone;
 
 our $VERSION = "0.01";
 
@@ -45,25 +45,17 @@ sub get_auth {
     my $self = shift;
     (my $load_version = $self->auth_version) =~ s/\./_/;
     # 認証チェック
-    my $ksclient = "Net::OpenStack::Swift::KeystoneClient::V${load_version}"->new(
+    my $ksclient = "Net::OpenStack::Swift::InnerKeystone::V${load_version}"->new(
         auth_url => $self->auth_url,
         user     => $self->user,
         password => $self->password,
         tenant_name => $self->tenant_name,
     );
-    #print Dumper($ksclient);
     my $auth_token = $ksclient->auth();
     my $endpoint = $ksclient->service_catalog_url_for(service_type=>'object-store', endpoint_type=>'publicURL');
     $self->token($auth_token);
     $self->storage_url($endpoint);
     return ($endpoint, $auth_token);
-   
-    #my ($storage_url, $token) = $ksclient->get_tokens();
-    #$self->storage_url($storage_url);
-    #$self->token($token);
-    ##return ($self, $storage_url, $token);
-    ##return $self;
-    #return $ksclient->get_tokens();
 }
 
 sub get_account {
@@ -73,12 +65,11 @@ sub get_account {
     $token       ||= $self->token;
     my $access_url = sprintf "%s?%s", ($storage_url, "format=json");
     #[format=>'json', marker=>'', limit=>'', prefix=>'', end_marker=>''],      # form data (HashRef/FileHandle are also okay)
-    #['Content-Type'=>'application/json',
     my $res = $self->agent->get(
         $access_url,
-        ['X-Auth-Token'=>$token], # headers
+        ['X-Auth-Token'=>$token], 
     );
-    die $res->status_line unless $res->is_success;
+    croak "request failed: ".$res->status_line unless $res->is_success;
     my $body_params = from_json($res->content);
     my %headers = $res->headers->flatten();
     return (\%headers, $body_params);

@@ -1,4 +1,4 @@
-package Net::OpenStack::Swift::KeystoneClient::Base;
+package Net::OpenStack::Swift::InnerKeystone::Base;
 use strict;
 use warnings;
 use Moo;
@@ -49,11 +49,12 @@ sub service_catalog_url_for {
 }
 
 
-package Net::OpenStack::Swift::KeystoneClient::V2_0;
+package Net::OpenStack::Swift::InnerKeystone::V2_0;
 use strict;
 use warnings;
+use Carp;
 use Moo;
-extends 'Net::OpenStack::Swift::KeystoneClient::Base';
+extends 'Net::OpenStack::Swift::InnerKeystone::Base';
 use Data::Dumper;
 
 sub get_auth_params {
@@ -77,33 +78,21 @@ sub auth {
         ['Content-Type'=>'application/json'], # headers
         JSON::to_json($self->get_auth_params),      # form data (HashRef/FileHandle are also okay)
     );
-    #print Dumper($res);
-    die $res->status_line unless $res->is_success;
+    croak "authorization failed: ".$res->status_line unless $res->is_success;
     my $body_params = JSON::from_json($res->content);
-    #print Dumper($body_params);
     $self->auth_token($body_params->{access}->{token}->{id});
     $self->service_catalog($body_params->{access}->{serviceCatalog});
     return $self->auth_token();
-
-    #my $endpoint;
-    ## このservice_catalog_url_forはregionでもしぼらないといけない
-    #foreach my $service_catelog (@{ $body_params->{access}->{serviceCatalog} }) {
-    #    if ('object-store' eq $service_catelog->{type}) {
-    #        # endpointsの中は配列なので複数ある可能性がありそう。複数あった場合どうなるんだろう
-    #        $endpoint = $service_catelog->{endpoints}->[0]->{publicURL}; 
-    #    } 
-    #}
-    #return ($body_params->{access}->{serviceCatalog}->[0]->{endpoints}->[0]->{publicURL}, # endpoints 'type' => 'object-store'
-    #        $body_params->{access}->{token}->{id});                           # token id
 }
 
 
 
-package Net::OpenStack::Swift::KeystoneClient::V3;
+package Net::OpenStack::Swift::InnerKeystone::V3;
 use strict;
 use warnings;
+use Carp;
 use Moo;
-extends 'Net::OpenStack::Swift::KeystoneClient::Base';
+extends 'Net::OpenStack::Swift::InnerKeystone::Base';
 
 sub get_auth_params {
     #my $data = {
