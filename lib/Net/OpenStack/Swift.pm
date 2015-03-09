@@ -94,6 +94,19 @@ sub head_account {
 
 sub post_account {
     die;
+    #my $self = shift;
+    #my ($storage_url, $token) = @_;
+    #$storage_url ||= $self->storage_url;
+    #$token       ||= $self->token;
+    #my $res = $self->agent->get(
+    #    $storage_url,
+    #    ['X-Auth-Token'=>$token], 
+    #);
+    #croak "Account HEAD failed: ".$res->status_line unless $res->is_success;
+    #my %headers = $res->headers->flatten();
+    #my $body_params = $res->content;
+    #return \%headers;
+
 }
 
 sub get_container {
@@ -105,7 +118,19 @@ sub head_container {
 }
 
 sub put_container {
-    die;
+    my $self = shift;
+    my ($storage_url, $token, $container_name) = @_;
+    $storage_url ||= $self->storage_url;
+    $token       ||= $self->token;
+    # todo: container_nameにquote必須らしい
+    my $container_url = sprintf "%s/%s", $storage_url, $container_name; 
+    my $res = $self->agent->put(
+        $container_url,
+        ['X-Auth-Token'=>$token], 
+    );
+    croak "Container PUT failed: ".$res->status_line unless $res->is_success;
+    my %headers = $res->headers->flatten();
+    return \%headers;
 }
 
 sub post_container {
