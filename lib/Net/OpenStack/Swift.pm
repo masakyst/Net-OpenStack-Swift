@@ -173,7 +173,7 @@ __END__
 
 =head1 NAME
 
-Net::OpenStack::Swift - It's new $module
+Net::OpenStack::Swift - Bindings for the OpenStack Object Storage (Swift) API.
 
 =head1 SYNOPSIS
 
@@ -181,7 +181,7 @@ Net::OpenStack::Swift - It's new $module
 
 =head1 DESCRIPTION
 
-Net::OpenStack::Swift is ...
+This is a perl client for the OpenStack Object Storage (Swift) API. 
 
 =head1 LICENSE
 
@@ -192,7 +192,7 @@ it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-masakyst E<lt>masakyst.mobile@gmail.comE<gt>
+masakyst E<lt>masakyst.public@gmail.comE<gt>
 
 =cut
 

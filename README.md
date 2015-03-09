@@ -1,6 +1,6 @@
 # NAME
 
-Net::OpenStack::Swift - It's new $module
+Net::OpenStack::Swift - Bindings for the OpenStack Object Storage (Swift) API.
 
 # SYNOPSIS
 
@@ -8,7 +8,7 @@ Net::OpenStack::Swift - It's new $module
 
 # DESCRIPTION
 
-Net::OpenStack::Swift is ...
+This is a perl client for the OpenStack Object Storage (Swift) API. 
 
 # LICENSE
 
@@ -19,4 +19,4 @@ it under the same terms as Perl itself.
 
 # AUTHOR
 
-masakyst <masakyst.mobile@gmail.com>
+masakyst <masakyst.public@gmail.com>
