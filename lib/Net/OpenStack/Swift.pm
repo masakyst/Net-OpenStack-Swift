@@ -203,7 +203,17 @@ sub post_object {
 }
 
 sub delete_object {
-    die;
+    my $self = shift;
+    my ($storage_url, $token, $container_name, $object_name) = @_;
+    my $object_url = sprintf "%s/%s/%s", $storage_url, $container_name, $object_name; 
+    my $res = $self->agent->delete(
+        $object_url,
+        ['X-Auth-Token' => $token],
+        [],
+    );
+    croak "Object DELETE failed: ".$res->status_line unless $res->is_success;
+    my %headers = $res->headers->flatten();
+    return \%headers;
 }
 
 sub get_capabilities {
