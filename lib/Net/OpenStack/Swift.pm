@@ -20,6 +20,8 @@ use Moo;
 # use namespace::clean;
 use JSON;
 use Data::Dumper;
+
+use Net::OpenStack::Swift::Util;
 use Net::OpenStack::Swift::InnerKeystone;
 
 our $VERSION = "0.01";
@@ -63,11 +65,24 @@ sub get_auth {
 
 sub get_account {
     my $self = shift;
-    my ($storage_url, $token) = @_;
-    $storage_url ||= $self->storage_url;
-    $token       ||= $self->token;
-    my $access_url = sprintf "%s?%s", ($storage_url, "format=json");
-    #[format=>'json', marker=>'', limit=>'', prefix=>'', end_marker=>''],      # form data (HashRef/FileHandle are also okay)
+    my %args = @_;
+    print Dumper(\%args);
+    $args{url}   ||= $self->storage_url;
+    $args{token} ||= $self->token;
+    my @qs = ('format=json'); # default query string
+    if ($args{marker}) {
+        push @qs, sprintf "marker=%s", uri_escape($args{marker});
+    }
+    if ($args{limit}) {
+        push @qs, sprintf("limit=%d", $args{limit});
+    }
+    if ($args{prefix}) {
+        push @qs, sprintf("prefix=%s", uri_escape($args{prefix}));
+    }
+    if ($args{end_marker}) {
+        push @qs, sprintf("end_marker=%s", uri_escape($args{end_marker}));
+    }
+    my $access_url = sprintf "%s?%s", $args{url}, join('&', @qs);
     my $res = $self->agent->get(
         $access_url,
         ['X-Auth-Token'=>$token], 
