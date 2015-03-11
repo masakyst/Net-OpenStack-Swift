@@ -83,7 +83,7 @@ sub head_account {
     my ($storage_url, $token) = @_;
     $storage_url ||= $self->storage_url;
     $token       ||= $self->token;
-    my $res = $self->agent->get(
+    my $res = $self->agent->head(
         $storage_url,
         ['X-Auth-Token'=>$token], 
     );
@@ -162,7 +162,17 @@ sub get_object {
 }
 
 sub head_object {
-    die;
+    my $self = shift;
+    my ($storage_url, $token, $container_name, $object_name) = @_;
+    my $object_url = sprintf "%s/%s/%s", $storage_url, $container_name, $object_name; 
+    my $res = $self->agent->head(
+        $object_url,
+        ['X-Auth-Token' => $token],
+        [],
+    );
+    croak "Object HEAD failed: ".$res->status_line unless $res->is_success;
+    my %headers = $res->headers->flatten();
+    return \%headers;
 }
 
 sub put_object {
