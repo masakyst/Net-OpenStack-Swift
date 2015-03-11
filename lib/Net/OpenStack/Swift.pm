@@ -65,32 +65,31 @@ sub get_auth {
 
 sub get_account {
     my $self = shift;
-    my %args = @_;
-
-    # by default
-    $args{url}   ||= $self->storage_url;
-    $args{token} ||= $self->token;
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+    );
+    my $args = $rule->validate(@_);
 
     # make query strings
     my @qs = ('format=json');
-    if ($args{marker}) {
-        push @qs, sprintf "marker=%s", uri_escape($args{marker});
+    if ($args->{marker}) {
+        push @qs, sprintf "marker=%s", uri_escape($args->{marker});
     }
-    if ($args{limit}) {
-        push @qs, sprintf("limit=%d", $args{limit});
+    if ($args->{limit}) {
+        push @qs, sprintf("limit=%d", $args->{limit});
     }
-    if ($args{prefix}) {
-        push @qs, sprintf("prefix=%s", uri_escape($args{prefix}));
+    if ($args->{prefix}) {
+        push @qs, sprintf("prefix=%s", uri_escape($args->{prefix}));
     }
-    if ($args{end_marker}) {
-        push @qs, sprintf("end_marker=%s", uri_escape($args{end_marker}));
+    if ($args->{end_marker}) {
+        push @qs, sprintf("end_marker=%s", uri_escape($args->{end_marker}));
     }
 
-    # request
-    my $access_url = sprintf "%s?%s", $args{url}, join('&', @qs);
+    my $access_url = sprintf "%s?%s", $args->{url}, join('&', @qs);
     my $res = $self->agent->get(
         $access_url,
-        ['X-Auth-Token'=>$args{token}], 
+        ['X-Auth-Token' => $args->{token}], 
     );
     croak "Account GET failed: ".$res->status_line unless $res->is_success;
     my $body_params = from_json($res->content);
@@ -100,16 +99,15 @@ sub get_account {
 
 sub head_account {
     my $self = shift;
-    my %args = @_;
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+    );
+    my $args = $rule->validate(@_);
 
-    # by default
-    $args{url}   ||= $self->storage_url;
-    $args{token} ||= $self->token;
-
-    # request
     my $res = $self->agent->head(
-        $args{url},
-        ['X-Auth-Token'=>$args{token}], 
+        $args->{url},
+        ['X-Auth-Token' => $args->{token}], 
     );
     croak "Account HEAD failed: ".$res->status_line unless $res->is_success;
     my %headers = $res->headers->flatten();
@@ -135,27 +133,16 @@ sub put_container {
         token          => { isa => 'Str', default => $self->token },
         container_name => { isa => 'Str'},
     );
-
     my $args = $rule->validate(@_);
-    print Dumper($args);
-    exit;
 
-    ## by default
-    #$args{url}   ||= $self->storage_url;
-    #$args{token} ||= $self->token;
-
-    ## validate
-    #
-   
-    ## request
-    #my $container_url = sprintf "%s/%s", $args{url}, uri_encode($args{container_name}); 
-    #my $res = $self->agent->put(
-    #    $container_url,
-    #    ['X-Auth-Token'=>$token], 
-    #);
-    #croak "Container PUT failed: ".$res->status_line unless $res->is_success;
-    #my %headers = $res->headers->flatten();
-    #return \%headers;
+    my $container_url = sprintf "%s/%s", $args->{url}, uri_encode($args->{container_name}); 
+    my $res = $self->agent->put(
+        $container_url,
+        ['X-Auth-Token' => $args->{token}], 
+    );
+    croak "Container PUT failed: ".$res->status_line unless $res->is_success;
+    my %headers = $res->headers->flatten();
+    return \%headers;
 }
 
 sub post_container {
@@ -168,15 +155,23 @@ sub delete_container {
 
 sub get_object {
     my $self = shift;
-    my ($storage_url, $token, $container_name, $object_name, $write_code) = @_;
-    my $object_url = sprintf "%s/%s/%s", $storage_url, $container_name, $object_name; 
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
+        object_name    => { isa => 'Str'},
+        write_code     => { isa => 'CodeRef'},
+    );
+    my $args = $rule->validate(@_);
+
+    my $object_url = sprintf "%s/%s/%s", $args->{url}, $args->{container_name}, $args->{object_name}; 
     my %special_headers = ('Content-Length' => undef);
     my $res = $self->agent->request(
         method          => 'GET',
         url             => $object_url,
         special_headers => \%special_headers,
-        headers         => ['X-Auth-Token' => $token],
-        write_code      => $write_code
+        headers         => ['X-Auth-Token' => $args->{token}],
+        write_code      => $args->{write_code}
     );
     croak "Object GET failed: ".$res->status_line unless $res->is_success;
     my %headers = $res->headers->flatten();
@@ -188,11 +183,18 @@ sub get_object {
 
 sub head_object {
     my $self = shift;
-    my ($storage_url, $token, $container_name, $object_name) = @_;
-    my $object_url = sprintf "%s/%s/%s", $storage_url, $container_name, $object_name; 
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
+        object_name    => { isa => 'Str'},
+    );
+    my $args = $rule->validate(@_);
+ 
+    my $object_url = sprintf "%s/%s/%s", $args->{url}, $args->{container_name}, $args->{object_name}; 
     my $res = $self->agent->head(
         $object_url,
-        ['X-Auth-Token' => $token],
+        ['X-Auth-Token' => $args->{token}],
         [],
     );
     croak "Object HEAD failed: ".$res->status_line unless $res->is_success;
@@ -202,19 +204,26 @@ sub head_object {
 
 sub put_object {
     my $self = shift;
-    my ($storage_url, $token, $container_name, $object_name, $content, $content_length, $content_type) = @_;
-    $storage_url ||= $self->storage_url;
-    $token       ||= $self->token;
-    # todo: container_nameにquote必須らしい
-    my $object_url = sprintf "%s/%s/%s", $storage_url, $container_name, $object_name; 
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
+        object_name    => { isa => 'Str'},
+        content        => { isa => 'Str'},
+        content_length => { isa => 'Int'},
+        content_type   => { isa => 'Str'},
+    );
+    my $args = $rule->validate(@_);
+ 
+    my $object_url = sprintf "%s/%s/%s", $args->{url}, $args->{container_name}, $args->{object_name}; 
     # todo: この辺追加オプションヘッダーも考慮する事
     # todo: chunk sizeでアップロードする仕組み http://qiita.com/ymko/items/4195cc0e76091566ccef
     my $res = $self->agent->put(
         $object_url,
-        ['X-Auth-Token'   => $token, 
-         'Content-Length' => $content_length, 
-         'Content-Type'   => $content_type], 
-        $content,
+        ['X-Auth-Token'   => $args->{token}, 
+         'Content-Length' => $args->{content_length}, 
+         'Content-Type'   => $args->{content_type}], 
+        $args->{content},
     );
     croak "Object PUT failed: ".$res->status_line unless $res->is_success;
     my %headers = $res->headers->flatten();
@@ -229,11 +238,18 @@ sub post_object {
 
 sub delete_object {
     my $self = shift;
-    my ($storage_url, $token, $container_name, $object_name) = @_;
-    my $object_url = sprintf "%s/%s/%s", $storage_url, $container_name, $object_name; 
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
+        object_name    => { isa => 'Str'},
+    );
+    my $args = $rule->validate(@_);
+ 
+    my $object_url = sprintf "%s/%s/%s", $args->{url}, $args->{container_name}, $args->{object_name}; 
     my $res = $self->agent->delete(
         $object_url,
-        ['X-Auth-Token' => $token],
+        ['X-Auth-Token' => $args->{token}],
         [],
     );
     croak "Object DELETE failed: ".$res->status_line unless $res->is_success;
