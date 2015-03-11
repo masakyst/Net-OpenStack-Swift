@@ -16,13 +16,13 @@ https://www.conoha.jp/guide/guide.php?g=52
 use strict;
 use warnings;
 use Carp;
-use Moo;
-# use namespace::clean;
+use Mouse;
 use JSON;
 use Data::Dumper;
-
+use Data::Validator;
 use Net::OpenStack::Swift::Util;
 use Net::OpenStack::Swift::InnerKeystone;
+use namespace::clean -except => 'meta';
 
 our $VERSION = "0.01";
 
@@ -66,10 +66,13 @@ sub get_auth {
 sub get_account {
     my $self = shift;
     my %args = @_;
-    print Dumper(\%args);
+
+    # by default
     $args{url}   ||= $self->storage_url;
     $args{token} ||= $self->token;
-    my @qs = ('format=json'); # default query string
+
+    # make query strings
+    my @qs = ('format=json');
     if ($args{marker}) {
         push @qs, sprintf "marker=%s", uri_escape($args{marker});
     }
@@ -82,10 +85,12 @@ sub get_account {
     if ($args{end_marker}) {
         push @qs, sprintf("end_marker=%s", uri_escape($args{end_marker}));
     }
+
+    # request
     my $access_url = sprintf "%s?%s", $args{url}, join('&', @qs);
     my $res = $self->agent->get(
         $access_url,
-        ['X-Auth-Token'=>$token], 
+        ['X-Auth-Token'=>$args{token}], 
     );
     croak "Account GET failed: ".$res->status_line unless $res->is_success;
     my $body_params = from_json($res->content);
@@ -95,12 +100,16 @@ sub get_account {
 
 sub head_account {
     my $self = shift;
-    my ($storage_url, $token) = @_;
-    $storage_url ||= $self->storage_url;
-    $token       ||= $self->token;
+    my %args = @_;
+
+    # by default
+    $args{url}   ||= $self->storage_url;
+    $args{token} ||= $self->token;
+
+    # request
     my $res = $self->agent->head(
-        $storage_url,
-        ['X-Auth-Token'=>$token], 
+        $args{url},
+        ['X-Auth-Token'=>$args{token}], 
     );
     croak "Account HEAD failed: ".$res->status_line unless $res->is_success;
     my %headers = $res->headers->flatten();
@@ -109,19 +118,6 @@ sub head_account {
 
 sub post_account {
     die;
-    #my $self = shift;
-    #my ($storage_url, $token) = @_;
-    #$storage_url ||= $self->storage_url;
-    #$token       ||= $self->token;
-    #my $res = $self->agent->get(
-    #    $storage_url,
-    #    ['X-Auth-Token'=>$token], 
-    #);
-    #croak "Account HEAD failed: ".$res->status_line unless $res->is_success;
-    #my %headers = $res->headers->flatten();
-    #my $body_params = $res->content;
-    #return \%headers;
-
 }
 
 sub get_container {
@@ -134,18 +130,32 @@ sub head_container {
 
 sub put_container {
     my $self = shift;
-    my ($storage_url, $token, $container_name) = @_;
-    $storage_url ||= $self->storage_url;
-    $token       ||= $self->token;
-    # todo: container_nameにquote必須らしい
-    my $container_url = sprintf "%s/%s", $storage_url, $container_name; 
-    my $res = $self->agent->put(
-        $container_url,
-        ['X-Auth-Token'=>$token], 
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
     );
-    croak "Container PUT failed: ".$res->status_line unless $res->is_success;
-    my %headers = $res->headers->flatten();
-    return \%headers;
+
+    my $args = $rule->validate(@_);
+    print Dumper($args);
+    exit;
+
+    ## by default
+    #$args{url}   ||= $self->storage_url;
+    #$args{token} ||= $self->token;
+
+    ## validate
+    #
+   
+    ## request
+    #my $container_url = sprintf "%s/%s", $args{url}, uri_encode($args{container_name}); 
+    #my $res = $self->agent->put(
+    #    $container_url,
+    #    ['X-Auth-Token'=>$token], 
+    #);
+    #croak "Container PUT failed: ".$res->status_line unless $res->is_success;
+    #my %headers = $res->headers->flatten();
+    #return \%headers;
 }
 
 sub post_container {

@@ -1,11 +1,11 @@
 package Net::OpenStack::Swift::InnerKeystone::Base;
 use strict;
 use warnings;
-use Moo;
-# use namespace::clean; # autocleanとの違いを把握すること
+use Mouse;
 use JSON;
 use Furl;
 use Data::Dumper;
+use namespace::clean -except => 'meta';
 
 has auth_token   => (is => 'rw'); 
 has service_catalog => (is => 'rw'); 
@@ -17,7 +17,6 @@ has verify_ssl   => (is => 'ro', default => sub {! $ENV{OSCOMPUTE_INSECURE}});
 
 has token => (
     is      => 'ro',
-    lazy    => 1,
 );
 
 has agent => (
@@ -36,7 +35,6 @@ sub get_auth_params { die; }
 
 sub service_catalog_url_for {
     my ($self, %args) = @_;
-    print Dumper(\%args);
     my $endpoint;
     # このservice_catalog_url_forはregionでもしぼらないといけない
     foreach my $service_catelog (@{ $self->service_catalog }) {
@@ -54,9 +52,11 @@ package Net::OpenStack::Swift::InnerKeystone::V2_0;
 use strict;
 use warnings;
 use Carp;
-use Moo;
-extends 'Net::OpenStack::Swift::InnerKeystone::Base';
 use Data::Dumper;
+use Mouse;
+use namespace::clean -except => 'meta';
+
+extends 'Net::OpenStack::Swift::InnerKeystone::Base';
 
 sub get_auth_params {
     my $self = shift;
@@ -92,7 +92,9 @@ package Net::OpenStack::Swift::InnerKeystone::V3;
 use strict;
 use warnings;
 use Carp;
-use Moo;
+use Mouse;
+use namespace::clean -except => 'meta';
+
 extends 'Net::OpenStack::Swift::InnerKeystone::Base';
 
 sub get_auth_params {

@@ -9,7 +9,8 @@ use Data::Dumper;
 sub import {
     no strict 'refs';
     my $pkg = caller(0);
-    *{"$pkg\::uri_escape"} = \&_uri_escape;
+    *{"$pkg\::uri_escape"}        = \&_uri_escape;
+    *{"$pkg\::validate_required"} = \&_uri_escape;
 }
 
 sub _uri_escape {
@@ -20,6 +21,13 @@ sub _uri_escape {
     else {
         return uri_escape($value);
     }
+}
+
+sub _validate_required {
+    my $value = shift; 
+    return 0 if not defined($value);
+    return 0 if $value eq ""; 
+    return 1;
 }
 
 1;
