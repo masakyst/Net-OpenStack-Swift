@@ -1,4 +1,4 @@
-requires 'perl', '5.008001';
+requires 'Moo';
 requires 'JSON';
 requires 'Furl';
 requires 'IO::Socket::SSL';

@@ -17,7 +17,7 @@ use strict;
 use warnings;
 use Carp;
 use Moo;
-use namespace::clean;
+# use namespace::clean;
 use JSON;
 use Data::Dumper;
 use Net::OpenStack::Swift::InnerKeystone;
@@ -142,7 +142,23 @@ sub delete_container {
 }
 
 sub get_object {
-    die;
+    my $self = shift;
+    my ($storage_url, $token, $container_name, $object_name, $write_code) = @_;
+    my $object_url = sprintf "%s/%s/%s", $storage_url, $container_name, $object_name; 
+    my %special_headers = ('Content-Length' => undef);
+    my $res = $self->agent->request(
+        method          => 'GET',
+        url             => $object_url,
+        special_headers => \%special_headers,
+        headers         => ['X-Auth-Token' => $token],
+        write_code      => $write_code
+    );
+    croak "Object GET failed: ".$res->status_line unless $res->is_success;
+    my %headers = $res->headers->flatten();
+    print Dumper(\%headers);
+    my $etag = $headers{etag};
+    $etag =~ s/^\s*(.*?)\s*$/$1/; # delete spaces
+    return $etag;
 }
 
 sub head_object {
@@ -157,6 +173,7 @@ sub put_object {
     # todo: container_nameにquote必須らしい
     my $object_url = sprintf "%s/%s/%s", $storage_url, $container_name, $object_name; 
     # todo: この辺追加オプションヘッダーも考慮する事
+    # todo: chunk sizeでアップロードする仕組み http://qiita.com/ymko/items/4195cc0e76091566ccef
     my $res = $self->agent->put(
         $object_url,
         ['X-Auth-Token'   => $token, 

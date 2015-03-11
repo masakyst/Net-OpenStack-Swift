@@ -2,7 +2,7 @@ package Net::OpenStack::Swift::InnerKeystone::Base;
 use strict;
 use warnings;
 use Moo;
-use namespace::clean;
+# use namespace::clean; # autocleanとの違いを把握すること
 use JSON;
 use Furl;
 use Data::Dumper;
