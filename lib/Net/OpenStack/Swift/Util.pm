@@ -3,28 +3,24 @@ package Net::OpenStack::Swift::Util;
 use strict;
 use warnings;
 use Encode;
-use URI::Escape;
+use URI::Escape qw//;
+use Exporter 'import';
+our @EXPORT_OK = qw(uri_escape uri_unescape);
 
-sub import {
-    no strict 'refs';
-    my $pkg = caller(0);
-    *{"$pkg\::uri_escape"}        = \&_uri_escape;
-    *{"$pkg\::uri_unescape"}      = \&_uri_unescape;
-}
 
-sub _uri_escape {
+sub uri_escape {
     my $value = shift;
     if (utf8::is_utf8($value)) {
-        return uri_escape_utf8($value);
+        return URI::Escape::uri_escape_utf8($value);
     }
     else {
-        return uri_escape($value);
+        return URI::Escape::uri_escape($value);
     }
 }
 
-sub _uri_unescape {
+sub uri_unescape {
     my $value = shift;
-    return uri_unescape($value);
+    return URI::Escape::uri_unescape($value);
 }
 
 1;

@@ -19,7 +19,7 @@ use Carp;
 use Mouse;
 use JSON;
 use Data::Validator;
-use Net::OpenStack::Swift::Util;
+use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape/;
 use Net::OpenStack::Swift::InnerKeystone;
 use Log::Minimal;
 use namespace::clean -except => 'meta';

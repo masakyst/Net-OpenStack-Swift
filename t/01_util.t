@@ -1,7 +1,7 @@
 use strict;
 use Test::More;
 use Encode;
-use Net::OpenStack::Swift::Util;
+use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape/;
 
 my $str = "まさきすと";
 is $str, uri_unescape(uri_escape($str));
