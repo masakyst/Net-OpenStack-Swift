@@ -18,10 +18,10 @@ use warnings;
 use Carp;
 use Mouse;
 use JSON;
-use Data::Dumper;
 use Data::Validator;
 use Net::OpenStack::Swift::Util;
 use Net::OpenStack::Swift::InnerKeystone;
+use Log::Minimal;
 use namespace::clean -except => 'meta';
 
 our $VERSION = "0.01";
@@ -33,7 +33,7 @@ has password     => (is => 'rw', required => 1);
 has tenant_name  => (is => 'rw');
 has storage_url  => (is => 'rw');
 has token        => (is => 'rw');
-has verify_ssl   => (is => 'ro', default => sub {! $ENV{OSCOMPUTE_INSECURE}});
+#has verify_ssl   => (is => 'ro', default => sub {! $ENV{OSCOMPUTE_INSECURE}});
 has agent => (
     is      => 'rw',
     lazy    => 1,
@@ -45,6 +45,20 @@ has agent => (
         return $agent;
     },  
 );
+
+sub _request {
+    my $self = shift;
+    # todo: contentがでかい場合referenceのがいい
+    my %args = @_;
+    my $res = $self->agent->request(
+        method          => $args{method},
+        url             => $args{url},
+        #special_headers => \%special_headers,
+        headers         => $args{header},
+        #write_code      => $args->{write_code}
+    );
+    return $res;
+}
 
 sub get_auth {
     my $self = shift;
@@ -64,10 +78,16 @@ sub get_auth {
 }
 
 sub get_account {
+    local $Log::Minimal::AUTODUMP = 1;
+
     my $self = shift;
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
+        marker         => { isa => 'Str', default => undef },
+        limit          => { isa => 'Int', default => undef },
+        prefix         => { isa => 'Str', default => undef },
+        end_marker     => { isa => 'Str', default => undef },
     );
     my $args = $rule->validate(@_);
 
@@ -86,14 +106,18 @@ sub get_account {
         push @qs, sprintf("end_marker=%s", uri_escape($args->{end_marker}));
     }
 
-    my $access_url = sprintf "%s?%s", $args->{url}, join('&', @qs);
-    my $res = $self->agent->get(
-        $access_url,
-        ['X-Auth-Token' => $args->{token}], 
-    );
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my $request_url    = sprintf "%s?%s", $args->{url}, join('&', @qs);
+    debugf("get_account() request header %s", $request_header);
+    debugf("get_account() request url: %s",   $request_url);
+    my $res = $self->_request(method=>'GET', url=>$request_url, header=>$request_header);
+
     croak "Account GET failed: ".$res->status_line unless $res->is_success;
+    debugf("get_account() response body %s", $res->content);
     my $body_params = from_json($res->content);
-    my %headers = $res->headers->flatten();
+    my @headers = $res->headers->flatten();
+    debugf("get_account() response headers %s", \@headers);
+    my %headers = @headers;
     return (\%headers, $body_params);
 }
 
@@ -175,7 +199,7 @@ sub get_object {
     );
     croak "Object GET failed: ".$res->status_line unless $res->is_success;
     my %headers = $res->headers->flatten();
-    print Dumper(\%headers);
+    #print Dumper(\%headers);
     my $etag = $headers{etag};
     $etag =~ s/^\s*(.*?)\s*$/$1/; # delete spaces
     return $etag;

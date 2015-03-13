@@ -4,13 +4,12 @@ use strict;
 use warnings;
 use Encode;
 use URI::Escape;
-use Data::Dumper;
 
 sub import {
     no strict 'refs';
     my $pkg = caller(0);
     *{"$pkg\::uri_escape"}        = \&_uri_escape;
-    *{"$pkg\::validate_required"} = \&_uri_escape;
+    *{"$pkg\::uri_unescape"}      = \&_uri_unescape;
 }
 
 sub _uri_escape {
@@ -23,11 +22,9 @@ sub _uri_escape {
     }
 }
 
-sub _validate_required {
-    my $value = shift; 
-    return 0 if not defined($value);
-    return 0 if $value eq ""; 
-    return 1;
+sub _uri_unescape {
+    my $value = shift;
+    return uri_unescape($value);
 }
 
 1;

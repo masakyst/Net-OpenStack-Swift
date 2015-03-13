@@ -7,17 +7,13 @@ use Furl;
 use Data::Dumper;
 use namespace::clean -except => 'meta';
 
-has auth_token   => (is => 'rw'); 
+has auth_token      => (is => 'rw'); 
 has service_catalog => (is => 'rw'); 
-has auth_url     => (is => 'rw', required => 1); 
-has user         => (is => 'rw', required => 1); 
-has password     => (is => 'rw', required => 1); 
-has tenant_name  => (is => 'rw');
-has verify_ssl   => (is => 'ro', default => sub {! $ENV{OSCOMPUTE_INSECURE}});
-
-has token => (
-    is      => 'ro',
-);
+has auth_url        => (is => 'rw', required => 1); 
+has user            => (is => 'rw', required => 1); 
+has password        => (is => 'rw', required => 1); 
+has tenant_name     => (is => 'rw');
+#has verify_ssl      => (is => 'ro', default => sub {! $ENV{OSCOMPUTE_INSECURE}});
 
 has agent => (
     is      => 'rw',
