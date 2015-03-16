@@ -4,8 +4,9 @@ use strict;
 use warnings;
 use Encode;
 use URI::Escape qw//;
+use Log::Minimal qw//;
 use Exporter 'import';
-our @EXPORT_OK = qw(uri_escape uri_unescape);
+our @EXPORT_OK = qw(uri_escape uri_unescape debugf);
 
 
 sub uri_escape {
@@ -21,6 +22,13 @@ sub uri_escape {
 sub uri_unescape {
     my $value = shift;
     return URI::Escape::uri_unescape($value);
+}
+
+sub debugf {
+    my ($message, $value) = @_;
+    local $Log::Minimal::TRACE_LEVEL = 1;
+    local $Log::Minimal::AUTODUMP    = 1;
+    Log::Minimal::debugf($message, $value);
 }
 
 1;

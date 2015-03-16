@@ -19,12 +19,12 @@ use Carp;
 use Mouse;
 use JSON;
 use Data::Validator;
-use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape/;
+use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape debugf/;
 use Net::OpenStack::Swift::InnerKeystone;
-use Log::Minimal;
 use namespace::clean -except => 'meta';
 
 our $VERSION = "0.01";
+
 
 has auth_version => (is => 'rw', required => 1, default => sub {"2.0"}); 
 has auth_url     => (is => 'rw', required => 1); 
@@ -78,8 +78,6 @@ sub get_auth {
 }
 
 sub get_account {
-    local $Log::Minimal::AUTODUMP = 1;
-
     my $self = shift;
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
