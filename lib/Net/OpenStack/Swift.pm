@@ -56,6 +56,7 @@ sub _request {
         #special_headers => \%special_headers,
         headers         => $args{header},
         #write_code      => $args->{write_code}
+        content         => $args{content},
     );
     return $res;
 }
@@ -63,7 +64,6 @@ sub _request {
 sub get_auth {
     my $self = shift;
     (my $load_version = $self->auth_version) =~ s/\./_/;
-    # 認証チェック
     my $ksclient = "Net::OpenStack::Swift::InnerKeystone::V${load_version}"->new(
         auth_url => $self->auth_url,
         user     => $self->user,
@@ -111,12 +111,10 @@ sub get_account {
     my $res = $self->_request(method=>'GET', url=>$request_url, header=>$request_header);
 
     croak "Account GET failed: ".$res->status_line unless $res->is_success;
-    debugf("get_account() response body %s", $res->content);
-    my $body_params = from_json($res->content);
-    my @headers = $res->headers->flatten();
-    debugf("get_account() response headers %s", \@headers);
-    my %headers = @headers;
-    return (\%headers, $body_params);
+    debugf("get_account() response headers %s", $res->headers->flatten);
+    debugf("get_account() response body %s",    $res->content);
+    my %headers = $res->headers->flatten;
+    return (\%headers, from_json($res->content));
 }
 
 sub head_account {
@@ -127,11 +125,14 @@ sub head_account {
     );
     my $args = $rule->validate(@_);
 
-    my $res = $self->agent->head(
-        $args->{url},
-        ['X-Auth-Token' => $args->{token}], 
-    );
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    debugf("head_account() request header %s", $request_header);
+    debugf("head_account() request url: %s",   $args->{url});
+    my $res = $self->_request(method=>'HEAD', url=>$args->{url}, header=>$request_header);
+
     croak "Account HEAD failed: ".$res->status_line unless $res->is_success;
+    debugf("head_account() response headers %s", $res->headers->flatten);
+    debugf("head_account() response body %s",    $res->content);
     my %headers = $res->headers->flatten();
     return \%headers;
 }
@@ -157,12 +158,15 @@ sub put_container {
     );
     my $args = $rule->validate(@_);
 
-    my $container_url = sprintf "%s/%s", $args->{url}, uri_encode($args->{container_name}); 
-    my $res = $self->agent->put(
-        $container_url,
-        ['X-Auth-Token' => $args->{token}], 
-    );
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
+    debugf("put_account() request header %s", $request_header);
+    debugf("put_account() request url: %s",   $request_url);
+    my $res = $self->_request(method=>'PUT', url=>$request_url, header=>$request_header);
+
     croak "Container PUT failed: ".$res->status_line unless $res->is_success;
+    debugf("put_container() response headers %s", $res->headers->flatten);
+    debugf("put_container() response body %s",    $res->content);
     my %headers = $res->headers->flatten();
     return \%headers;
 }
@@ -186,18 +190,23 @@ sub get_object {
     );
     my $args = $rule->validate(@_);
 
-    my $object_url = sprintf "%s/%s/%s", $args->{url}, $args->{container_name}, $args->{object_name}; 
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my $request_url    = sprintf "%s/%s/%s", $args->{url}, 
+        uri_escape($args->{container_name}), 
+        uri_escape($args->{object_name}); 
     my %special_headers = ('Content-Length' => undef);
-    my $res = $self->agent->request(
-        method          => 'GET',
-        url             => $object_url,
+    debugf("get_object() request header %s", $request_header);
+    debugf("get_object() request special headers: %s", $request_url);
+    debugf("get_object() request url: %s", $request_url);
+    my $res = $self->_request(method=>'GET', url=>$request_url, header=>$request_header, 
         special_headers => \%special_headers,
-        headers         => ['X-Auth-Token' => $args->{token}],
         write_code      => $args->{write_code}
     );
+
     croak "Object GET failed: ".$res->status_line unless $res->is_success;
+    debugf("get_object() response headers %s", $res->headers->flatten);
+    debugf("get_object() response body %s",    $res->content);
     my %headers = $res->headers->flatten();
-    #print Dumper(\%headers);
     my $etag = $headers{etag};
     $etag =~ s/^\s*(.*?)\s*$/$1/; # delete spaces
     return $etag;
@@ -213,13 +222,18 @@ sub head_object {
     );
     my $args = $rule->validate(@_);
  
-    my $object_url = sprintf "%s/%s/%s", $args->{url}, $args->{container_name}, $args->{object_name}; 
-    my $res = $self->agent->head(
-        $object_url,
-        ['X-Auth-Token' => $args->{token}],
-        [],
-    );
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my $request_url    = sprintf "%s/%s/%s", $args->{url}, 
+        uri_escape($args->{container_name}), 
+        uri_escape($args->{object_name}); 
+    debugf("head_object() request header %s", $request_header);
+    debugf("head_object() request url: %s", $request_url);
+    my $res = $self->_request(method=>'HEAD', url=>$request_url, header=>$request_header, 
+        content => []);
+
     croak "Object HEAD failed: ".$res->status_line unless $res->is_success;
+    debugf("head_object() response headers %s", $res->headers->flatten);
+    debugf("head_object() response body %s",    $res->content);
     my %headers = $res->headers->flatten();
     return \%headers;
 }
@@ -233,21 +247,29 @@ sub put_object {
         object_name    => { isa => 'Str'},
         content        => { isa => 'Str'},
         content_length => { isa => 'Int'},
-        content_type   => { isa => 'Str'},
+        content_type   => { isa => 'Str', default => 'application/octet-stream'},
     );
     my $args = $rule->validate(@_);
- 
-    my $object_url = sprintf "%s/%s/%s", $args->{url}, $args->{container_name}, $args->{object_name}; 
+
+    my $request_header = [
+        'X-Auth-Token'   => $args->{token},
+        'Content-Length' => $args->{content_length}, 
+        'Content-Type'   => $args->{content_type}, 
+    ];
+    my $request_url = sprintf "%s/%s/%s", $args->{url}, 
+        uri_escape($args->{container_name}), 
+        uri_escape($args->{object_name}); 
     # todo: この辺追加オプションヘッダーも考慮する事
     # todo: chunk sizeでアップロードする仕組み http://qiita.com/ymko/items/4195cc0e76091566ccef
-    my $res = $self->agent->put(
-        $object_url,
-        ['X-Auth-Token'   => $args->{token}, 
-         'Content-Length' => $args->{content_length}, 
-         'Content-Type'   => $args->{content_type}], 
-        $args->{content},
-    );
+    debugf("put_object() request header %s", $request_header);
+    debugf("put_object() request url: %s", $request_url);
+ 
+    my $res = $self->_request(method => 'PUT', url => $request_url, header => $request_header, 
+        content => $args->{content});
+
     croak "Object PUT failed: ".$res->status_line unless $res->is_success;
+    debugf("put_object() response headers %s", $res->headers->flatten);
+    debugf("put_object() response body %s",    $res->content);
     my %headers = $res->headers->flatten();
     my $etag = $headers{etag};
     $etag =~ s/^\s*(.*?)\s*$/$1/; # delete spaces
@@ -268,13 +290,19 @@ sub delete_object {
     );
     my $args = $rule->validate(@_);
  
-    my $object_url = sprintf "%s/%s/%s", $args->{url}, $args->{container_name}, $args->{object_name}; 
-    my $res = $self->agent->delete(
-        $object_url,
-        ['X-Auth-Token' => $args->{token}],
-        [],
-    );
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my $request_url = sprintf "%s/%s/%s", $args->{url}, 
+        uri_escape($args->{container_name}), 
+        uri_escape($args->{object_name}); 
+    debugf("delete_object() request header %s", $request_header);
+    debugf("delete_object() request url: %s", $request_url);
+ 
+    my $res = $self->_request(method=>'DELETE', url=>$request_url, header=>$request_header, 
+        content => []);
+
     croak "Object DELETE failed: ".$res->status_line unless $res->is_success;
+    debugf("delete_object() response headers %s", $res->headers->flatten);
+    debugf("delete_object() response body %s",    $res->content);
     my %headers = $res->headers->flatten();
     return \%headers;
 }
