@@ -439,6 +439,15 @@ Delete container.
 
 Get object content and metadata.
 
+    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
+    my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg', 
+        write_code => sub {
+            my ($status, $message, $headers, $chunk) = @_; 
+            print $status;
+            print length($chunk);
+            print $fh $chunk;
+    });
+
 =over
 
 =item container_name
@@ -450,16 +459,6 @@ Get object content and metadata.
 Code reference
 
 =back
-
-    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
-    my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg', 
-        write_code => sub {
-            my ($status, $message, $headers, $chunk) = @_; 
-            print $status;
-            print length($chunk);
-            print $fh $chunk;
-    });
-
 
 =head2 head_object
 

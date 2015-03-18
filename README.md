@@ -111,12 +111,6 @@ Delete container.
 
 Get object content and metadata.
 
-- container\_name
-- object\_name
-- write\_code
-
-    Code reference
-
     open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
     my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg', 
         write_code => sub {
@@ -125,6 +119,12 @@ Get object content and metadata.
             print length($chunk);
             print $fh $chunk;
     });
+
+- container\_name
+- object\_name
+- write\_code
+
+    Code reference
 
 ## head\_object
 
