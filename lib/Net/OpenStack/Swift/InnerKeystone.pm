@@ -1,6 +1,4 @@
 package Net::OpenStack::Swift::InnerKeystone::Base;
-use strict;
-use warnings;
 use Mouse;
 use JSON;
 use Furl;
@@ -42,8 +40,6 @@ sub service_catalog_url_for {
 
 
 package Net::OpenStack::Swift::InnerKeystone::V2_0;
-use strict;
-use warnings;
 use Carp;
 use JSON;
 use Mouse;
@@ -81,8 +77,6 @@ sub auth {
 
 
 package Net::OpenStack::Swift::InnerKeystone::V3;
-use strict;
-use warnings;
 use Carp;
 use JSON;
 use Mouse;

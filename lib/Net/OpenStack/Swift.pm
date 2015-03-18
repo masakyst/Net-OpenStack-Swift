@@ -1,7 +1,4 @@
 package Net::OpenStack::Swift;
-
-use strict;
-use warnings;
 use Carp;
 use Mouse;
 use JSON;
