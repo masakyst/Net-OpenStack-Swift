@@ -346,8 +346,6 @@ Attention!! Keystone authorization is still only Identity API v2.0.
 
 Creates a client.
 
-params:
-
 =over
 
 =item auth_url
@@ -376,33 +374,76 @@ still only 2.0 (Keystone/Identity 2.0 API)
 
 =head2 get_auth
 
-get storage url and auth token.
+Get storage url and auth token.
 
 =head2 get_account
 
+Show account details and list containers.
+
+=over
+
+=item maker
+
+Optional.
+
+=item end_maker
+
+Optional.
+
+=item limit
+
+Optional.
+
+=back
+
+
 =head2 head_account
+
+Show account metadata.
 
 =head2 post_account
 
+Create, update, or delete account metadata.
+
 =head2 get_container
+
+Show container details and list objects.
 
 =head2 head_container
 
+Show container metadata.
+
 =head2 put_container
+
+Create container.
 
 =head2 post_container
 
+Create, update, or delete container metadata.
+
 =head2 delete_container
+
+Delete container.
 
 =head2 get_object
 
+Get object content and metadata.
+
 =head2 head_object
+
+Show object metadata.
 
 =head2 put_object
 
+Create or replace object.
+
 =head2 post_object
 
+Create or update object metadata.
+
 =head2 delete_object
+
+Delete object.
 
 =head1 SEE ALSO
 

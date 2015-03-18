@@ -31,8 +31,6 @@ Attention!! Keystone authorization is still only Identity API v2.0.
 
 Creates a client.
 
-params:
-
 - auth\_url
 
     Required. The url of the authentication endpoint.
@@ -57,39 +55,77 @@ params:
 
 ## get\_auth
 
-get storage url and auth token.
+Get storage url and auth token.
 
 ## get\_account
 
+Show account details and list containers.
+
+- maker
+
+    Optional.
+
+- end\_maker
+
+    Optional.
+
+- limit
+
+    Optional.
+
 ## head\_account
+
+Show account metadata.
 
 ## post\_account
 
+Create, update, or delete account metadata.
+
 ## get\_container
+
+Show container details and list objects.
 
 ## head\_container
 
+Show container metadata.
+
 ## put\_container
+
+Create container.
 
 ## post\_container
 
+Create, update, or delete container metadata.
+
 ## delete\_container
+
+Delete container.
 
 ## get\_object
 
+Get object content and metadata.
+
 ## head\_object
+
+Show object metadata.
 
 ## put\_object
 
+Create or replace object.
+
 ## post\_object
+
+Create or update object metadata.
 
 ## delete\_object
 
+Delete object.
+
 # SEE ALSO
 
-    http://docs.openstack.org/developer/swift/
+http://docs.openstack.org/developer/swift/
 
-    http://docs.openstack.org/developer/keystone/
+http://docs.openstack.org/developer/keystone/
 
 # LICENSE
 
