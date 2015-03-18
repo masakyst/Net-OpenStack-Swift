@@ -1,7 +1,7 @@
 {
-   "abstract" : "It's new $module",
+   "abstract" : "Bindings for the OpenStack Object Storage API, known as Swift.",
    "author" : [
-      "masakyst <masakyst.mobile@gmail.com>"
+      "masakyst <masakyst.public@gmail.com>"
    ],
    "dynamic_config" : 0,
    "generated_by" : "Minilla/v0.11.0, CPAN::Meta::Converter version 2.142060",
@@ -43,15 +43,39 @@
       },
       "runtime" : {
          "requires" : {
-            "perl" : "5.008005"
+            "Data::Validator" : "0",
+            "Furl" : "0",
+            "IO::Socket::SSL" : "0",
+            "JSON" : "0",
+            "Log::Minimal" : "0",
+            "Mouse" : "0",
+            "URI::Escape" : "0",
+            "namespace::clean" : "0"
          }
       },
       "test" : {
          "requires" : {
+            "Data::Section::Simple" : "0",
+            "Test::MockObject" : "0",
+            "Test::MockObject::Extends" : "0",
             "Test::More" : "0.98"
          }
       }
    },
    "release_status" : "unstable",
-   "version" : "0.01"
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/masakyst/Net-OpenStack-Swift/issues"
+      },
+      "homepage" : "https://github.com/masakyst/Net-OpenStack-Swift",
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/masakyst/Net-OpenStack-Swift.git",
+         "web" : "https://github.com/masakyst/Net-OpenStack-Swift"
+      }
+   },
+   "version" : "0.01",
+   "x_contributors" : [
+      "masakyst <masakyst.mobile@gmail.com>"
+   ]
 }

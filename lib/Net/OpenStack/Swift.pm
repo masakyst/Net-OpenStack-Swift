@@ -1,18 +1,5 @@
 package Net::OpenStack::Swift;
 
-=pod
-
-python swift clientの説明
-http://blog.bit-isle.jp/bird/2013/03/42
-
-V3
-http://docs.openstack.org/developer/keystone/api_curl_examples.html
-
-ConoHa
-https://www.conoha.jp/guide/guide.php?g=52
-
-=cut
-
 use strict;
 use warnings;
 use Carp;
@@ -322,23 +309,106 @@ sub get_capabilities {
 1;
 __END__
 
-=encoding utf-8
-
 =head1 NAME
 
-Net::OpenStack::Swift - Bindings for the OpenStack Object Storage (Swift) API.
+Net::OpenStack::Swift - Bindings for the OpenStack Object Storage API, known as Swift.
 
 =head1 SYNOPSIS
 
     use Net::OpenStack::Swift;
 
+    my $sw = Net::OpenStack::Swift->new(
+        auth_url       => 'https://auth-endpoint-url/v2.0',
+        user           => 'userid',
+        password       => 'password',
+        tenant_name    => 'project_id',
+        # auth_version => '2.0', # by default
+    );
+
+    my ($storage_url, $token) = $sw->get_auth();
+
+    my ($headers, $containers) = $sw->get_account(url => $storage_url, token => $token);
+    # or,  storage_url and token can be omitted.
+    my ($headers, $containers) = $sw->get_account();
+
+
 =head1 DESCRIPTION
 
-This is a perl client for the OpenStack Object Storage (Swift) API. 
+Bindings for the OpenStack Object Storage API, known as Swift.
+Attention!! Keystone authorization is still only Identity API v2.0.
+
+=head1 METHODS
+
+=head2 new
+
+Creates a client.
+
+params:
+
+=over
+
+=item auth_url
+
+Required. The url of the authentication endpoint.
+
+=item user
+
+Required.
+
+=item password
+
+Required.
+
+=item tenant_name
+
+Required.
+tenant name/project
+
+=item auth_version
+
+Optional.
+still only 2.0 (Keystone/Identity 2.0 API)
+
+=back
+
+=head2 get_auth
+
+get storage url and auth token.
+
+=head2 get_account
+
+=head2 head_account
+
+=head2 post_account
+
+=head2 get_container
+
+=head2 head_container
+
+=head2 put_container
+
+=head2 post_container
+
+=head2 delete_container
+
+=head2 get_object
+
+=head2 head_object
+
+=head2 put_object
+
+=head2 post_object
+
+=head2 delete_object
+
+=head1 SEE ALSO
+
+    http://docs.openstack.org/developer/swift/
+
+    http://docs.openstack.org/developer/keystone/
+
 
 =head1 LICENSE
-
-Copyright (C) masakyst.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
@@ -348,4 +418,3 @@ it under the same terms as Perl itself.
 masakyst E<lt>masakyst.public@gmail.comE<gt>
 
 =cut
-
