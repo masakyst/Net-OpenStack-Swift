@@ -32,14 +32,13 @@ has agent => (
 
 sub _request {
     my $self = shift;
-    # todo: contentがでかい場合referenceのがいい
     my %args = @_;
     my $res = $self->agent->request(
         method          => $args{method},
         url             => $args{url},
-        #special_headers => \%special_headers,
+        special_headers => $args{special_headers},
         headers         => $args{header},
-        #write_code      => $args->{write_code}
+        write_code      => $args{write_code},
         content         => $args{content},
     );
     return $res;
@@ -407,9 +406,9 @@ get storage url and auth token.
 
 =head1 SEE ALSO
 
-    http://docs.openstack.org/developer/swift/
+http://docs.openstack.org/developer/swift/
 
-    http://docs.openstack.org/developer/keystone/
+http://docs.openstack.org/developer/keystone/
 
 
 =head1 LICENSE
