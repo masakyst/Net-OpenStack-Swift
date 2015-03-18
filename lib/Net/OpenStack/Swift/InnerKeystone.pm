@@ -4,7 +4,6 @@ use warnings;
 use Mouse;
 use JSON;
 use Furl;
-use Data::Dumper;
 use namespace::clean -except => 'meta';
 
 has auth_token      => (is => 'rw'); 
@@ -20,9 +19,7 @@ has agent => (
     lazy    => 1,
     default => sub {
         my $self = shift;
-        my $agent = Furl->new(
-            #agent    => "Mozilla/5.0",
-        );  
+        my $agent = Furl->new;  
         return $agent;
     },  
 );
@@ -48,7 +45,7 @@ package Net::OpenStack::Swift::InnerKeystone::V2_0;
 use strict;
 use warnings;
 use Carp;
-use Data::Dumper;
+use JSON;
 use Mouse;
 use namespace::clean -except => 'meta';
 
@@ -56,7 +53,7 @@ extends 'Net::OpenStack::Swift::InnerKeystone::Base';
 
 sub get_auth_params {
     my $self = shift;
-    my $data = {
+    return {
         auth => {
             tenantName   => $self->tenant_name,
             passwordCredentials => {
@@ -65,7 +62,6 @@ sub get_auth_params {
             }
         }
     };
- 
 }
 
 sub auth {
@@ -73,10 +69,10 @@ sub auth {
     my $res = $self->agent->post(
         $self->auth_url."/tokens",
         ['Content-Type'=>'application/json'], # headers
-        JSON::to_json($self->get_auth_params),      # form data (HashRef/FileHandle are also okay)
+        to_json($self->get_auth_params),      # form data (HashRef/FileHandle are also okay)
     );
     croak "authorization failed: ".$res->status_line unless $res->is_success;
-    my $body_params = JSON::from_json($res->content);
+    my $body_params = from_json($res->content);
     $self->auth_token($body_params->{access}->{token}->{id});
     $self->service_catalog($body_params->{access}->{serviceCatalog});
     return $self->auth_token();
@@ -88,13 +84,14 @@ package Net::OpenStack::Swift::InnerKeystone::V3;
 use strict;
 use warnings;
 use Carp;
+use JSON;
 use Mouse;
 use namespace::clean -except => 'meta';
 
 extends 'Net::OpenStack::Swift::InnerKeystone::Base';
 
 sub get_auth_params {
-    #my $data = {
+    #return {
     #    auth => {
     #        identity => {
     #            methods => ['password'],

@@ -13,6 +13,10 @@ my $sw = Net::OpenStack::Swift->new(
     #auth_version => '2.0',
 );
 
+# dummy token and url
+$sw->token('abcdefg1234567');
+$sw->storage_url('http://storage-url');
+
 Test::MockObject::Extends->new($sw);
 $sw->mock(__dummy_response => sub {
     my $self = shift;
@@ -38,7 +42,7 @@ $sw->mock(_request => sub {
 });
 
 $sw->__dummy_response(eval get_data_section('get_account.headers.perl'), '{}');
-my ($headers, $containers) = $sw->get_account(url => 'test', token => 'token', marker => 'さいとう');
+my ($headers, $containers) = $sw->get_account(url => $sw->storage_url, token => $sw->token, marker => 'さいとう');
 is $headers->{'x-account-container-count'}, 3;
 
 done_testing;

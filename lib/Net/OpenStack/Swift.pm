@@ -111,9 +111,10 @@ sub get_account {
     my $res = $self->_request(method=>'GET', url=>$request_url, header=>$request_header);
 
     croak "Account GET failed: ".$res->status_line unless $res->is_success;
-    debugf("get_account() response headers %s", $res->headers->flatten);
+    my @headers = $res->headers->flatten();
+    debugf("get_account() response headers %s", \@headers);
     debugf("get_account() response body %s",    $res->content);
-    my %headers = $res->headers->flatten;
+    my %headers = @headers;
     return (\%headers, from_json($res->content));
 }
 
@@ -131,9 +132,10 @@ sub head_account {
     my $res = $self->_request(method=>'HEAD', url=>$args->{url}, header=>$request_header);
 
     croak "Account HEAD failed: ".$res->status_line unless $res->is_success;
-    debugf("head_account() response headers %s", $res->headers->flatten);
+    my @headers = $res->headers->flatten();
+    debugf("head_account() response headers %s", \@headers);
     debugf("head_account() response body %s",    $res->content);
-    my %headers = $res->headers->flatten();
+    my %headers = @headers;
     return \%headers;
 }
 
@@ -165,9 +167,10 @@ sub put_container {
     my $res = $self->_request(method=>'PUT', url=>$request_url, header=>$request_header);
 
     croak "Container PUT failed: ".$res->status_line unless $res->is_success;
-    debugf("put_container() response headers %s", $res->headers->flatten);
+    my @headers = $res->headers->flatten();
+    debugf("put_container() response headers %s", \@headers);
     debugf("put_container() response body %s",    $res->content);
-    my %headers = $res->headers->flatten();
+    my %headers = @headers;
     return \%headers;
 }
 
@@ -204,9 +207,10 @@ sub get_object {
     );
 
     croak "Object GET failed: ".$res->status_line unless $res->is_success;
-    debugf("get_object() response headers %s", $res->headers->flatten);
-    debugf("get_object() response body %s",    $res->content);
-    my %headers = $res->headers->flatten();
+    my @headers = $res->headers->flatten();
+    debugf("get_object() response headers %s", \@headers);
+    debugf("get_object() response body length %s byte", length $res->content);
+    my %headers = @headers;
     my $etag = $headers{etag};
     $etag =~ s/^\s*(.*?)\s*$/$1/; # delete spaces
     return $etag;
@@ -232,9 +236,10 @@ sub head_object {
         content => []);
 
     croak "Object HEAD failed: ".$res->status_line unless $res->is_success;
-    debugf("head_object() response headers %s", $res->headers->flatten);
+    my @headers = $res->headers->flatten();
+    debugf("head_object() response headers %s", \@headers);
     debugf("head_object() response body %s",    $res->content);
-    my %headers = $res->headers->flatten();
+    my %headers = @headers;
     return \%headers;
 }
 
@@ -268,9 +273,10 @@ sub put_object {
         content => $args->{content});
 
     croak "Object PUT failed: ".$res->status_line unless $res->is_success;
-    debugf("put_object() response headers %s", $res->headers->flatten);
+    my @headers = $res->headers->flatten();
+    debugf("put_object() response headers %s", \@headers);
     debugf("put_object() response body %s",    $res->content);
-    my %headers = $res->headers->flatten();
+    my %headers = @headers;
     my $etag = $headers{etag};
     $etag =~ s/^\s*(.*?)\s*$/$1/; # delete spaces
     return $etag;
@@ -301,9 +307,10 @@ sub delete_object {
         content => []);
 
     croak "Object DELETE failed: ".$res->status_line unless $res->is_success;
-    debugf("delete_object() response headers %s", $res->headers->flatten);
+    my @headers = $res->headers->flatten();
+    debugf("delete_object() response headers %s", \@headers);
     debugf("delete_object() response body %s",    $res->content);
-    my %headers = $res->headers->flatten();
+    my %headers = @headers;
     return \%headers;
 }
 
