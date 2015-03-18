@@ -45,7 +45,7 @@ sub _request {
     return $res;
 }
 
-sub get_auth {
+sub auth_keystone {
     my $self = shift;
     (my $load_version = $self->auth_version) =~ s/\./_/;
     my $ksclient = "Net::OpenStack::Swift::InnerKeystone::V${load_version}"->new(
@@ -56,9 +56,16 @@ sub get_auth {
     );
     my $auth_token = $ksclient->auth();
     my $endpoint = $ksclient->service_catalog_url_for(service_type=>'object-store', endpoint_type=>'publicURL');
+    croak "Not found endpoint type 'object-store'" unless $endpoint;
     $self->token($auth_token);
     $self->storage_url($endpoint);
-    return ($endpoint, $auth_token);
+    return 1;
+}
+
+sub get_auth {
+    my $self = shift;
+    $self->auth_keystone();
+    return ($self->storage_url, $self->token);
 }
 
 sub get_account {

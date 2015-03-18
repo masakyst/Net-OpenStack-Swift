@@ -1,5 +1,6 @@
 use strict;
 use Test::More;
+use Test::MockObject::Extends;
 use Net::OpenStack::Swift;
 
 my $sw = Net::OpenStack::Swift->new(
@@ -17,5 +18,19 @@ is $sw->password, 'abcdefg';
 is $sw->tenant_name, '1234567';
 is $sw->token, undef;
 is $sw->storage_url, undef;
+
+
+Test::MockObject::Extends->new($sw);
+$sw->mock(auth_keystone => sub {
+    my $self = shift;
+    # dummy token and storage url
+    $self->token('abcdefg1234567');
+    $self->storage_url('http://storage-url');
+});
+
+
+my ($storage_url, $token) = $sw->get_auth();
+is $storage_url, 'http://storage-url';
+is $token, 'abcdefg1234567';
 
 done_testing;
