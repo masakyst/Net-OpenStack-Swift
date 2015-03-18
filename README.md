@@ -69,6 +69,10 @@ Show account details and list containers.
 
     Optional.
 
+- prefix
+
+    Optional.
+
 - limit
 
     Optional.
@@ -93,6 +97,8 @@ Show container metadata.
 
 Create container.
 
+- container\_name
+
 ## post\_container
 
 Create, update, or delete container metadata.
@@ -104,6 +110,21 @@ Delete container.
 ## get\_object
 
 Get object content and metadata.
+
+- container\_name
+- object\_name
+- write\_code
+
+    Code reference
+
+    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
+    my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg', 
+        write_code => sub {
+            my ($status, $message, $headers, $chunk) = @_; 
+            print $status;
+            print length($chunk);
+            print $fh $chunk;
+    });
 
 ## head\_object
 
