@@ -390,6 +390,10 @@ Optional.
 
 Optional.
 
+=item prefix
+
+Optional.
+
 =item limit
 
 Optional.
@@ -417,6 +421,12 @@ Show container metadata.
 
 Create container.
 
+=over
+
+=item container_name
+
+=back
+
 =head2 post_container
 
 Create, update, or delete container metadata.
@@ -428,6 +438,28 @@ Delete container.
 =head2 get_object
 
 Get object content and metadata.
+
+=over
+
+=item container_name
+
+=item object_name
+
+=item write_code
+
+Code reference
+
+=back
+
+    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
+    my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg', 
+        write_code => sub {
+            my ($status, $message, $headers, $chunk) = @_; 
+            print $status;
+            print length($chunk);
+            print $fh $chunk;
+    });
+
 
 =head2 head_object
 
