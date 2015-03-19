@@ -570,19 +570,13 @@ Show account metadata.
 
 Create, update, or delete account metadata.
 
-    not implemented yet
-
 =head2 get_container
 
 Show container details and list objects.
 
-    not implemented yet
-
 =head2 head_container
 
 Show container metadata.
-
-    not implemented yet
 
 =head2 put_container
 
@@ -600,14 +594,10 @@ Create container.
 
 Create, update, or delete container metadata.
 
-    not implemented yet
-
 =head2 delete_container
 
 Delete container.
     
-    not implemented yet
-
 =head2 get_object
 
 Get object content and metadata.
@@ -652,8 +642,6 @@ Create or replace object.
 =head2 post_object
 
 Create or update object metadata.
-
-    not implemented yet
 
 =head2 delete_object
 

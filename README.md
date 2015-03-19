@@ -101,19 +101,13 @@ Show account metadata.
 
 Create, update, or delete account metadata.
 
-    not implemented yet
-
 ## get\_container
 
 Show container details and list objects.
 
-    not implemented yet
-
 ## head\_container
 
 Show container metadata.
-
-    not implemented yet
 
 ## put\_container
 
@@ -127,13 +121,9 @@ Create container.
 
 Create, update, or delete container metadata.
 
-    not implemented yet
-
 ## delete\_container
 
 Delete container.
-
-    not implemented yet
 
 ## get\_object
 
@@ -173,8 +163,6 @@ Create or replace object.
 ## post\_object
 
 Create or update object metadata.
-
-    not implemented yet
 
 ## delete\_object
 
