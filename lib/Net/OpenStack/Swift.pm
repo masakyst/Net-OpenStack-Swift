@@ -254,8 +254,7 @@ sub put_object {
     my $request_url = sprintf "%s/%s/%s", $args->{url}, 
         uri_escape($args->{container_name}), 
         uri_escape($args->{object_name}); 
-    # todo: この辺追加オプションヘッダーも考慮する事
-    # todo: chunk sizeでアップロードする仕組み http://qiita.com/ymko/items/4195cc0e76091566ccef
+    # todo: chunk size upload
     debugf("put_object() request header %s", $request_header);
     debugf("put_object() request url: %s", $request_url);
  
@@ -376,9 +375,27 @@ still only 2.0 (Keystone/Identity 2.0 API)
 
 Get storage url and auth token.
 
+    my ($storage_url, $token) = $sw->get_auth();
+
+response: 
+
+=over
+
+=item storage_url
+
+Endpoint URL
+
+=item token
+
+Auth Token
+
+=back
+
 =head2 get_account
 
 Show account details and list containers.
+
+    my ($headers, $containers) = $sw->get_account(marker => 'hoge');
 
 =over
 
@@ -405,21 +422,31 @@ Optional.
 
 Show account metadata.
 
+    my $headers = $sw->head_account();
+
 =head2 post_account
 
 Create, update, or delete account metadata.
+
+    not implemented yet
 
 =head2 get_container
 
 Show container details and list objects.
 
+    not implemented yet
+
 =head2 head_container
 
 Show container metadata.
 
+    not implemented yet
+
 =head2 put_container
 
 Create container.
+
+    my $headers = $sw->put_container(container_name => 'container1')
 
 =over
 
@@ -431,9 +458,13 @@ Create container.
 
 Create, update, or delete container metadata.
 
+    not implemented yet
+
 =head2 delete_container
 
 Delete container.
+    
+    not implemented yet
 
 =head2 get_object
 
@@ -464,17 +495,30 @@ Code reference
 
 Show object metadata.
 
+    my $headers = $sw->head_object(container_name => 'container1', object_name => 'hoge.jpeg');
+
 =head2 put_object
 
 Create or replace object.
+
+    my $file = 'hoge.jpeg';
+    open my $fh, '<', "./$file" or die;
+    my $content = do { local $/; <$fh> };
+    my $headers = $sw->put_object(container_name => 'container1', 
+        object_name => 'hoge.jpeg', content => $content, content_length => -s $file);
 
 =head2 post_object
 
 Create or update object metadata.
 
+    not implemented yet
+
 =head2 delete_object
 
 Delete object.
+
+    my $headers = $sw->delete_object(container_name => 'container1', object_name => 'hoge.jpeg');
+
 
 =head1 SEE ALSO
 
