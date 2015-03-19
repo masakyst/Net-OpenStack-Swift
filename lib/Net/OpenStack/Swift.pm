@@ -650,6 +650,15 @@ Delete object.
     my $headers = $sw->delete_object(container_name => 'container1', object_name => 'hoge.jpeg');
 
 
+=head1 Debug
+
+To print request/response Debug messages, $ENV{LM_DEBUG} must be true. 
+
+example
+
+    $ LM_DEBUG=1 carton exec perl test.pl
+
+
 =head1 SEE ALSO
 
 http://docs.openstack.org/developer/swift/
