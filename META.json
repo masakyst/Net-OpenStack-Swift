@@ -1,5 +1,5 @@
 {
-   "abstract" : "Bindings for the OpenStack Object Storage API, known as Swift.",
+   "abstract" : "Perl Bindings for the OpenStack Object Storage API, known as Swift.",
    "author" : [
       "masakyst <masakyst.public@gmail.com>"
    ],

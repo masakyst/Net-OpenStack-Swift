@@ -134,11 +134,68 @@ sub post_account {
 }
 
 sub get_container {
-    die;
+    my $self = shift;
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
+        marker         => { isa => 'Str', default => undef },
+        limit          => { isa => 'Int', default => undef },
+        prefix         => { isa => 'Str', default => undef },
+        end_marker     => { isa => 'Str', default => undef },
+    );
+    my $args = $rule->validate(@_);
+
+    # make query strings
+    my @qs = ('format=json');
+    if ($args->{marker}) {
+        push @qs, sprintf "marker=%s", uri_escape($args->{marker});
+    }
+    if ($args->{limit}) {
+        push @qs, sprintf("limit=%d", $args->{limit});
+    }
+    if ($args->{prefix}) {
+        push @qs, sprintf("prefix=%s", uri_escape($args->{prefix}));
+    }
+    if ($args->{end_marker}) {
+        push @qs, sprintf("end_marker=%s", uri_escape($args->{end_marker}));
+    }
+
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my $request_url    = sprintf "%s/%s?%s", $args->{url}, uri_escape($args->{container_name}), join('&', @qs);
+    debugf("get_container() request header %s", $request_header);
+    debugf("get_container() request url: %s",   $request_url);
+    my $res = $self->_request(method=>'GET', url=>$request_url, header=>$request_header);
+
+    croak "Container GET failed: ".$res->status_line unless $res->is_success;
+    my @headers = $res->headers->flatten();
+    debugf("get_container() response headers %s", \@headers);
+    debugf("get_container() response body %s",    $res->content);
+    my %headers = @headers;
+    return (\%headers, from_json($res->content));
 }
 
 sub head_container {
-    die;
+    my $self = shift;
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
+    );
+    my $args = $rule->validate(@_);
+
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
+    debugf("head_container() request header %s", $request_header);
+    debugf("head_container() request url: %s",   $args->{url});
+    my $res = $self->_request(method=>'HEAD', url=>$request_url, header=>$request_header);
+
+    croak "Container HEAD failed: ".$res->status_line unless $res->is_success;
+    my @headers = $res->headers->flatten();
+    debugf("head_container() response headers %s", \@headers);
+    debugf("head_container() response body %s",    $res->content);
+    my %headers = @headers;
+    return \%headers;
 }
 
 sub put_container {
@@ -313,7 +370,7 @@ __END__
 
 =head1 NAME
 
-Net::OpenStack::Swift - Bindings for the OpenStack Object Storage API, known as Swift.
+Net::OpenStack::Swift - Perl Bindings for the OpenStack Object Storage API, known as Swift.
 
 =head1 SYNOPSIS
 
@@ -336,7 +393,7 @@ Net::OpenStack::Swift - Bindings for the OpenStack Object Storage API, known as 
 
 =head1 DESCRIPTION
 
-Bindings for the OpenStack Object Storage API, known as Swift.
+Perl Bindings for the OpenStack Object Storage API, known as Swift.
 Attention!! Keystone authorization is still only Identity API v2.0.
 
 =head1 METHODS

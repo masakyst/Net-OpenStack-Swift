@@ -1,6 +1,6 @@
 # NAME
 
-Net::OpenStack::Swift - Bindings for the OpenStack Object Storage API, known as Swift.
+Net::OpenStack::Swift - Perl Bindings for the OpenStack Object Storage API, known as Swift.
 
 # SYNOPSIS
 
@@ -22,7 +22,7 @@ Net::OpenStack::Swift - Bindings for the OpenStack Object Storage API, known as 
 
 # DESCRIPTION
 
-Bindings for the OpenStack Object Storage API, known as Swift.
+Perl Bindings for the OpenStack Object Storage API, known as Swift.
 Attention!! Keystone authorization is still only Identity API v2.0.
 
 # METHODS
