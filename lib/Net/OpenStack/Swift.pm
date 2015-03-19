@@ -226,7 +226,28 @@ sub post_container {
 }
 
 sub delete_container {
-    die;
+    my $self = shift;
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
+    );
+    my $args = $rule->validate(@_);
+ 
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my $request_url = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
+    debugf("delete_container() request header %s", $request_header);
+    debugf("delete_container() request url: %s", $request_url);
+ 
+    my $res = $self->_request(method=>'DELETE', url=>$request_url, header=>$request_header, 
+        content => []);
+
+    croak "Container DELETE failed: ".$res->status_line unless $res->is_success;
+    my @headers = $res->headers->flatten();
+    debugf("delete_container() response headers %s", \@headers);
+    debugf("delete_container() response body %s",    $res->content);
+    my %headers = @headers;
+    return \%headers;
 }
 
 sub get_object {
