@@ -222,7 +222,31 @@ sub put_container {
 }
 
 sub post_container {
-    die;
+    my $self = shift;
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
+        headers        => { isa => 'HashRef'},
+    );
+    my $args = $rule->validate(@_);
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    unless (exists $args->{headers}->{'Content-Length'} || exists($args->{headers}->{'content-length'})) {
+        $args->{headers}->{'Content-Length'} = 0;
+    }
+    my @additional_headers = %{ $args->{headers} };
+    push @{$request_header}, @additional_headers;
+    my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
+    debugf("post_account() request header %s", $request_header);
+    debugf("post_account() request url: %s",   $request_url);
+    my $res = $self->_request(method=>'POST', url=>$request_url, header=>$request_header);
+
+    croak "Container POST failed: ".$res->status_line unless $res->is_success;
+    my @headers = $res->headers->flatten();
+    debugf("post_container() response headers %s", \@headers);
+    debugf("post_container() response body %s",    $res->content);
+    my %headers = @headers;
+    return \%headers;
 }
 
 sub delete_container {
