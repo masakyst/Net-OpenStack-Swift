@@ -1,3 +1,6 @@
+.DS_Store
+cpanfile.snapshot
+
 eg/
 /.build/
 /_build/

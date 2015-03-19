@@ -10,6 +10,7 @@ has auth_url        => (is => 'rw', required => 1);
 has user            => (is => 'rw', required => 1); 
 has password        => (is => 'rw', required => 1); 
 has tenant_name     => (is => 'rw');
+
 #has verify_ssl      => (is => 'ro', default => sub {! $ENV{OSCOMPUTE_INSECURE}});
 
 has agent => (
@@ -64,8 +65,8 @@ sub auth {
     my $self = shift;
     my $res = $self->agent->post(
         $self->auth_url."/tokens",
-        ['Content-Type'=>'application/json'], # headers
-        to_json($self->get_auth_params),      # form data (HashRef/FileHandle are also okay)
+        ['Content-Type'=>'application/json'],
+        to_json($self->get_auth_params),
     );
     croak "authorization failed: ".$res->status_line unless $res->is_success;
     my $body_params = from_json($res->content);
