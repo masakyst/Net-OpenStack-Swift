@@ -57,9 +57,23 @@ Creates a client.
 
 Get storage url and auth token.
 
+    my ($storage_url, $token) = $sw->get_auth();
+
+response: 
+
+- storage\_url
+
+    Endpoint URL
+
+- token
+
+    Auth Token
+
 ## get\_account
 
 Show account details and list containers.
+
+    my ($headers, $containers) = $sw->get_account(marker => 'hoge');
 
 - maker
 
@@ -81,21 +95,31 @@ Show account details and list containers.
 
 Show account metadata.
 
+    my $headers = $sw->head_account();
+
 ## post\_account
 
 Create, update, or delete account metadata.
+
+    not implemented yet
 
 ## get\_container
 
 Show container details and list objects.
 
+    not implemented yet
+
 ## head\_container
 
 Show container metadata.
 
+    not implemented yet
+
 ## put\_container
 
 Create container.
+
+    my $headers = $sw->put_container(container_name => 'container1')
 
 - container\_name
 
@@ -103,9 +127,13 @@ Create container.
 
 Create, update, or delete container metadata.
 
+    not implemented yet
+
 ## delete\_container
 
 Delete container.
+
+    not implemented yet
 
 ## get\_object
 
@@ -130,17 +158,29 @@ Get object content and metadata.
 
 Show object metadata.
 
+    my $headers = $sw->head_object(container_name => 'container1', object_name => 'hoge.jpeg');
+
 ## put\_object
 
 Create or replace object.
+
+    my $file = 'hoge.jpeg';
+    open my $fh, '<', "./$file" or die;
+    my $content = do { local $/; <$fh> };
+    my $headers = $sw->put_object(container_name => 'container1', 
+        object_name => 'hoge.jpeg', content => $content, content_length => -s $file);
 
 ## post\_object
 
 Create or update object metadata.
 
+    not implemented yet
+
 ## delete\_object
 
 Delete object.
+
+    my $headers = $sw->delete_object(container_name => 'container1', object_name => 'hoge.jpeg');
 
 # SEE ALSO
 
