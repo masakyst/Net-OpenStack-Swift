@@ -130,7 +130,28 @@ sub head_account {
 }
 
 sub post_account {
-    die;
+    my $self = shift;
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        headers        => { isa => 'HashRef'},
+    );
+    my $args = $rule->validate(@_);
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my @additional_headers = %{ $args->{headers} };
+    push @{$request_header}, @additional_headers;
+    my $request_url = $args->{url};
+    debugf("post_account() request header %s", $request_header);
+    debugf("post_account() request url: %s",   $request_url);
+    my $res = $self->_request(method=>'POST', url=>$request_url, header=>$request_header);
+
+    croak "Account POST failed: ".$res->status_line unless $res->is_success;
+    my @headers = $res->headers->flatten();
+    debugf("post_account() response headers %s", \@headers);
+    debugf("post_account() response body %s",    $res->content);
+    my %headers = @headers;
+    return \%headers;
+
 }
 
 sub get_container {
@@ -237,8 +258,8 @@ sub post_container {
     my @additional_headers = %{ $args->{headers} };
     push @{$request_header}, @additional_headers;
     my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
-    debugf("post_account() request header %s", $request_header);
-    debugf("post_account() request url: %s",   $request_url);
+    debugf("post_container() request header %s", $request_header);
+    debugf("post_container() request url: %s",   $request_url);
     my $res = $self->_request(method=>'POST', url=>$request_url, header=>$request_header);
 
     croak "Container POST failed: ".$res->status_line unless $res->is_success;
