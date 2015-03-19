@@ -395,7 +395,31 @@ sub put_object {
 }
 
 sub post_object {
-    die;
+    my $self = shift;
+    my $rule = Data::Validator->new(
+        url            => { isa => 'Str', default => $self->storage_url},
+        token          => { isa => 'Str', default => $self->token },
+        container_name => { isa => 'Str'},
+        object_name    => { isa => 'Str'},
+        headers        => { isa => 'HashRef'},
+    );
+    my $args = $rule->validate(@_);
+    my $request_header = ['X-Auth-Token' => $args->{token}];
+    my @additional_headers = %{ $args->{headers} };
+    push @{$request_header}, @additional_headers;
+    my $request_url    = sprintf "%s/%s/%s", $args->{url}, 
+        uri_escape($args->{container_name}),
+        uri_escape($args->{object_name});
+    debugf("post_object() request header %s", $request_header);
+    debugf("post_object() request url: %s",   $request_url);
+    my $res = $self->_request(method=>'POST', url=>$request_url, header=>$request_header);
+
+    croak "Object POST failed: ".$res->status_line unless $res->is_success;
+    my @headers = $res->headers->flatten();
+    debugf("post_object() response headers %s", \@headers);
+    debugf("post_object() response body %s",    $res->content);
+    my %headers = @headers;
+    return \%headers;
 }
 
 sub delete_object {
@@ -425,11 +449,6 @@ sub delete_object {
     my %headers = @headers;
     return \%headers;
 }
-
-sub get_capabilities {
-    die;
-}
-
 
 1;
 __END__
