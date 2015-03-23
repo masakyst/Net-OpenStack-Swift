@@ -130,6 +130,11 @@ Delete container.
 Get object content and metadata.
 
     open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
+    my $etag = $sw->get_object(container_name => 'container_name1', object_name => 'masakystjpeg', 
+        write_file => $fh,
+    );
+    # or chunked
+    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
     my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg', 
         write_code => sub {
             my ($status, $message, $headers, $chunk) = @_; 
@@ -140,9 +145,13 @@ Get object content and metadata.
 
 - container\_name
 - object\_name
-- write\_code
+- write\_file: FileHandle
 
-    Code reference
+    the response content will be saved here instead of in the response object.
+
+- write\_code: Code reference
+
+    the response content will be called for each chunk of the response content.
 
 ## head\_object
 
@@ -159,9 +168,7 @@ Create or replace object.
     my $headers = $sw->put_object(container_name => 'container1', 
         object_name => 'hoge.jpeg', content => $fh, content_length => -s $file);
 
-- content
-
-    String or FileHandle
+- content: String|FileHandle
 
 ## post\_object
 
