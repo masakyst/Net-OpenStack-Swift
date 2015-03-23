@@ -1,6 +1,9 @@
 Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
+
+0.02 2015-03-23T08:19:40Z
+    - put_object: support FileHandle content
     
 0.01 2015-03-19T05:24:22Z
 
