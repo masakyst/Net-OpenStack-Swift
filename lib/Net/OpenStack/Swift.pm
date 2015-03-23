@@ -7,7 +7,7 @@ use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape debugf/;
 use Net::OpenStack::Swift::InnerKeystone;
 use namespace::clean -except => 'meta';
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 
 has auth_version => (is => 'rw', required => 1, default => sub {"2.0"}); 

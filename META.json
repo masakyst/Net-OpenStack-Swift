@@ -74,8 +74,8 @@
          "web" : "https://github.com/masakyst/Net-OpenStack-Swift"
       }
    },
-   "version" : "0.01",
+   "version" : "0.02",
    "x_contributors" : [
-      "masakyst <masakyst.mobile@gmail.com>"
+      "Masaaki Saito <masakyst.mobile@gmail.com>"
    ]
 }

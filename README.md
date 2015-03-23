@@ -156,9 +156,12 @@ Create or replace object.
 
     my $file = 'hoge.jpeg';
     open my $fh, '<', "./$file" or die;
-    my $content = do { local $/; <$fh> };
     my $headers = $sw->put_object(container_name => 'container1', 
-        object_name => 'hoge.jpeg', content => $content, content_length => -s $file);
+        object_name => 'hoge.jpeg', content => $fh, content_length => -s $file);
+
+- content
+
+    String or FileHandle
 
 ## post\_object
 
