@@ -76,8 +76,7 @@ sub auth {
 }
 
 
-
-package Net::OpenStack::Swift::InnerKeystone::V3;
+package Net::OpenStack::Swift::InnerKeystone::V3_0;
 use Carp;
 use JSON;
 use Mouse;
@@ -102,5 +101,9 @@ sub get_auth_params {
     #};
 }
 
+sub auth {
+    my $self = shift;
+    croak "not implemented yet......";
+}
 
 1;
