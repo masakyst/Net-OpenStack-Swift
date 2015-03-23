@@ -39,6 +39,7 @@ sub _request {
         special_headers => $args->{special_headers},
         headers         => $args->{header},
         write_code      => $args->{write_code},
+        write_file      => $args->{write_file},
         content         => $args->{content},
     );
     return $res;
@@ -160,7 +161,6 @@ sub post_account {
     debugf("post_account() response body %s",    $res->content);
     my %headers = @headers;
     return \%headers;
-
 }
 
 sub get_container {
@@ -321,14 +321,15 @@ sub delete_container {
 sub get_object {
     my $self = shift;
     my $rule = Data::Validator->new(
-        url            => { isa => 'Str', default => $self->storage_url},
+        url            => { isa => 'Str', default => $self->storage_url },
         token          => { isa => 'Str', default => $self->token },
         container_name => { isa => 'Str'},
         object_name    => { isa => 'Str'},
-        write_code     => { isa => 'CodeRef'},
+        write_file     => { isa => 'FileHandle', xor => [qw(write_code)] },
+        write_code     => { isa => 'CodeRef' },
     );
     my $args = $rule->validate(@_);
-
+    
     my $request_header = ['X-Auth-Token' => $args->{token}];
     my $request_url    = sprintf "%s/%s/%s", $args->{url}, 
         uri_escape($args->{container_name}), 
@@ -338,11 +339,19 @@ sub get_object {
     debugf("get_object() request special headers: %s", $request_url);
     debugf("get_object() request url: %s", $request_url);
 
-    my $res = $self->_request({
+    my $request_params = {
         method => 'GET', url => $request_url, header => $request_header, 
         special_headers => \%special_headers,
-        write_code      => $args->{write_code}
-    });
+        write_code      => undef,
+        write_file      => undef,
+    };
+    if (exists $args->{write_code}) {
+        $request_params->{write_code} = $args->{write_code};
+    }
+    if (exists $args->{write_file}) {
+        $request_params->{write_file} = $args->{write_file};
+    }
+    my $res = $self->_request($request_params);
 
     croak "Object GET failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -636,6 +645,11 @@ Delete container.
 Get object content and metadata.
 
     open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
+    my $etag = $sw->get_object(container_name => 'container_name1', object_name => 'masakystjpeg', 
+        write_file => $fh,
+    );
+    # or chunked
+    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
     my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg', 
         write_code => sub {
             my ($status, $message, $headers, $chunk) = @_; 
@@ -650,9 +664,13 @@ Get object content and metadata.
 
 =item object_name
 
-=item write_code
+=item write_file: FileHandle
 
-Code reference
+the response content will be saved here instead of in the response object.
+
+=item write_code: Code reference
+
+the response content will be called for each chunk of the response content.
 
 =back
 
@@ -673,9 +691,7 @@ Create or replace object.
 
 =over
 
-=item content
-
-String or FileHandle
+=item content: String|FileHandle
 
 =back
 
