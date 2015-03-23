@@ -32,14 +32,14 @@ has agent => (
 
 sub _request {
     my $self = shift;
-    my %args = @_;
+    my $args = shift;
     my $res = $self->agent->request(
-        method          => $args{method},
-        url             => $args{url},
-        special_headers => $args{special_headers},
-        headers         => $args{header},
-        write_code      => $args{write_code},
-        content         => $args{content},
+        method          => $args->{method},
+        url             => $args->{url},
+        special_headers => $args->{special_headers},
+        headers         => $args->{header},
+        write_code      => $args->{write_code},
+        content         => $args->{content},
     );
     return $res;
 }
@@ -98,7 +98,10 @@ sub get_account {
     my $request_url    = sprintf "%s?%s", $args->{url}, join('&', @qs);
     debugf("get_account() request header %s", $request_header);
     debugf("get_account() request url: %s",   $request_url);
-    my $res = $self->_request(method=>'GET', url=>$request_url, header=>$request_header);
+
+    my $res = $self->_request({
+        method => 'GET', url => $request_url, header => $request_header
+    });
 
     croak "Account GET failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -119,7 +122,10 @@ sub head_account {
     my $request_header = ['X-Auth-Token' => $args->{token}];
     debugf("head_account() request header %s", $request_header);
     debugf("head_account() request url: %s",   $args->{url});
-    my $res = $self->_request(method=>'HEAD', url=>$args->{url}, header=>$request_header);
+
+    my $res = $self->_request({
+        method => 'HEAD', url => $args->{url}, header => $request_header
+    });
 
     croak "Account HEAD failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -143,7 +149,10 @@ sub post_account {
     my $request_url = $args->{url};
     debugf("post_account() request header %s", $request_header);
     debugf("post_account() request url: %s",   $request_url);
-    my $res = $self->_request(method=>'POST', url=>$request_url, header=>$request_header);
+
+    my $res = $self->_request({
+        method => 'POST', url => $request_url, header => $request_header
+    });
 
     croak "Account POST failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -186,7 +195,10 @@ sub get_container {
     my $request_url    = sprintf "%s/%s?%s", $args->{url}, uri_escape($args->{container_name}), join('&', @qs);
     debugf("get_container() request header %s", $request_header);
     debugf("get_container() request url: %s",   $request_url);
-    my $res = $self->_request(method=>'GET', url=>$request_url, header=>$request_header);
+
+    my $res = $self->_request({
+        method => 'GET', url => $request_url, header => $request_header
+    });
 
     croak "Container GET failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -209,7 +221,10 @@ sub head_container {
     my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
     debugf("head_container() request header %s", $request_header);
     debugf("head_container() request url: %s",   $args->{url});
-    my $res = $self->_request(method=>'HEAD', url=>$request_url, header=>$request_header);
+
+    my $res = $self->_request({
+        method => 'HEAD', url => $request_url, header => $request_header
+    });
 
     croak "Container HEAD failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -232,7 +247,10 @@ sub put_container {
     my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
     debugf("put_account() request header %s", $request_header);
     debugf("put_account() request url: %s",   $request_url);
-    my $res = $self->_request(method=>'PUT', url=>$request_url, header=>$request_header);
+
+    my $res = $self->_request({
+        method => 'PUT', url => $request_url, header => $request_header
+    });
 
     croak "Container PUT failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -260,7 +278,10 @@ sub post_container {
     my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
     debugf("post_container() request header %s", $request_header);
     debugf("post_container() request url: %s",   $request_url);
-    my $res = $self->_request(method=>'POST', url=>$request_url, header=>$request_header);
+
+    my $res = $self->_request({
+        method => 'POST', url => $request_url, header => $request_header
+    });
 
     croak "Container POST failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -284,8 +305,10 @@ sub delete_container {
     debugf("delete_container() request header %s", $request_header);
     debugf("delete_container() request url: %s", $request_url);
  
-    my $res = $self->_request(method=>'DELETE', url=>$request_url, header=>$request_header, 
-        content => []);
+    my $res = $self->_request({
+        method => 'DELETE', url => $request_url, header => $request_header, 
+        content => []
+    });
 
     croak "Container DELETE failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -314,10 +337,12 @@ sub get_object {
     debugf("get_object() request header %s", $request_header);
     debugf("get_object() request special headers: %s", $request_url);
     debugf("get_object() request url: %s", $request_url);
-    my $res = $self->_request(method=>'GET', url=>$request_url, header=>$request_header, 
+
+    my $res = $self->_request({
+        method => 'GET', url => $request_url, header => $request_header, 
         special_headers => \%special_headers,
         write_code      => $args->{write_code}
-    );
+    });
 
     croak "Object GET failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -345,8 +370,11 @@ sub head_object {
         uri_escape($args->{object_name}); 
     debugf("head_object() request header %s", $request_header);
     debugf("head_object() request url: %s", $request_url);
-    my $res = $self->_request(method=>'HEAD', url=>$request_url, header=>$request_header, 
-        content => []);
+
+    my $res = $self->_request({
+        method => 'HEAD', url => $request_url, header => $request_header, 
+        content => []
+    });
 
     croak "Object HEAD failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -363,7 +391,7 @@ sub put_object {
         token          => { isa => 'Str', default => $self->token },
         container_name => { isa => 'Str'},
         object_name    => { isa => 'Str'},
-        content        => { isa => 'Str'},
+        content        => { isa => 'Str|FileHandle'},
         content_length => { isa => 'Int'},
         content_type   => { isa => 'Str', default => 'application/octet-stream'},
     );
@@ -377,12 +405,12 @@ sub put_object {
     my $request_url = sprintf "%s/%s/%s", $args->{url}, 
         uri_escape($args->{container_name}), 
         uri_escape($args->{object_name}); 
-    # todo: chunk size upload
     debugf("put_object() request header %s", $request_header);
     debugf("put_object() request url: %s", $request_url);
- 
-    my $res = $self->_request(method => 'PUT', url => $request_url, header => $request_header, 
-        content => $args->{content});
+
+    my $res = $self->_request({
+        method => 'PUT', url => $request_url, header => $request_header, content => $args->{content}
+    });
 
     croak "Object PUT failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -412,7 +440,10 @@ sub post_object {
         uri_escape($args->{object_name});
     debugf("post_object() request header %s", $request_header);
     debugf("post_object() request url: %s",   $request_url);
-    my $res = $self->_request(method=>'POST', url=>$request_url, header=>$request_header);
+
+    my $res = $self->_request({
+        method => 'POST', url => $request_url, header => $request_header
+    });
 
     croak "Object POST failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
@@ -439,8 +470,10 @@ sub delete_object {
     debugf("delete_object() request header %s", $request_header);
     debugf("delete_object() request url: %s", $request_url);
  
-    my $res = $self->_request(method=>'DELETE', url=>$request_url, header=>$request_header, 
-        content => []);
+    my $res = $self->_request({
+        method => 'DELETE', url => $request_url, header => $request_header, 
+        content => []
+    });
 
     croak "Object DELETE failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
