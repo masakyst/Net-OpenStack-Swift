@@ -173,8 +173,12 @@ Create or replace object.
     my $headers = $sw->put_object(container_name => 'container1', 
         object_name => 'hoge.jpeg', content => $fh, content_length => -s $file);
 
-- content: String|FileHandle
+- content: Str|FileHandle
 - content\_length: Int
+- content\_type: Str
+
+    Optional.
+    Default 'application/octet-stream'
 
     Optional.
 

@@ -691,9 +691,14 @@ Create or replace object.
 
 =over
 
-=item content: String|FileHandle
+=item content: Str|FileHandle
 
 =item content_length: Int
+
+=item content_type: Str
+
+Optional.
+Default 'application/octet-stream'
 
 Optional.
 
