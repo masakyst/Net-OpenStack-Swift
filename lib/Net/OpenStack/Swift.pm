@@ -611,26 +611,24 @@ Show account metadata.
 =head2 post_account
 
 Create, update, or delete account metadata.
-
+    
 =head2 get_container
 
 Show container details and list objects.
 
+    my ($headers, $containers) = $sw->get_container(container_name => 'container1');
+
 =head2 head_container
 
 Show container metadata.
+
+    my $headers = $sw->head_container(container_name => 'container1');
 
 =head2 put_container
 
 Create container.
 
     my $headers = $sw->put_container(container_name => 'container1')
-
-=over
-
-=item container_name
-
-=back
 
 =head2 post_container
 
@@ -639,6 +637,8 @@ Create, update, or delete container metadata.
 =head2 delete_container
 
 Delete container.
+
+    my $headers = $sw->delete_container(container_name => 'container1');
     
 =head2 get_object
 
@@ -692,6 +692,10 @@ Create or replace object.
 =over
 
 =item content: String|FileHandle
+
+=item content_length: Int
+
+Optional.
 
 =back
 

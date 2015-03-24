@@ -105,17 +105,19 @@ Create, update, or delete account metadata.
 
 Show container details and list objects.
 
+    my ($headers, $containers) = $sw->get_container(container_name => 'container1');
+
 ## head\_container
 
 Show container metadata.
+
+    my $headers = $sw->head_container(container_name => 'container1');
 
 ## put\_container
 
 Create container.
 
     my $headers = $sw->put_container(container_name => 'container1')
-
-- container\_name
 
 ## post\_container
 
@@ -124,6 +126,9 @@ Create, update, or delete container metadata.
 ## delete\_container
 
 Delete container.
+
+    my $headers = $sw->delete_container(container_name => 'container1');
+    
 
 ## get\_object
 
@@ -169,6 +174,9 @@ Create or replace object.
         object_name => 'hoge.jpeg', content => $fh, content_length => -s $file);
 
 - content: String|FileHandle
+- content\_length: Int
+
+    Optional.
 
 ## post\_object
 
