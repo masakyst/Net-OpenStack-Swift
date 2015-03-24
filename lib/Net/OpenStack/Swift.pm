@@ -698,9 +698,7 @@ Create or replace object.
 =item content_type: Str
 
 Optional.
-Default 'application/octet-stream'
-
-Optional.
+default 'application/octet-stream'
 
 =back
 
