@@ -17,7 +17,6 @@ has password     => (is => 'rw', required => 1);
 has tenant_name  => (is => 'rw');
 has storage_url  => (is => 'rw');
 has token        => (is => 'rw');
-#has verify_ssl   => (is => 'ro', default => sub {! $ENV{OSCOMPUTE_INSECURE}});
 has agent => (
     is      => 'rw',
     lazy    => 1,
@@ -401,8 +400,10 @@ sub put_object {
         container_name => { isa => 'Str'},
         object_name    => { isa => 'Str'},
         content        => { isa => 'Str|FileHandle'},
-        content_length => { isa => 'Int'},
+        content_length => { isa => 'Int', default => sub { 0 } },
         content_type   => { isa => 'Str', default => 'application/octet-stream'},
+        etag           => { isa => 'Str', default => undef },
+        query_string   => { isa => 'Str', default => sub {''} },
     );
     my $args = $rule->validate(@_);
 
@@ -411,9 +412,16 @@ sub put_object {
         'Content-Length' => $args->{content_length}, 
         'Content-Type'   => $args->{content_type}, 
     ];
+    if ($args->{etag}) {
+        push @{$request_header}, ('ETag' => $args->{etag});
+    }
+ 
     my $request_url = sprintf "%s/%s/%s", $args->{url}, 
         uri_escape($args->{container_name}), 
         uri_escape($args->{object_name}); 
+    if ($args->{query_string}) {
+        $request_url .= '?'.$args->{query_string}; 
+    }
     debugf("put_object() request header %s", $request_header);
     debugf("put_object() request url: %s", $request_url);
 
