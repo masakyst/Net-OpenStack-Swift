@@ -1,6 +1,9 @@
 Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
+
+0.03 2015-03-26T14:38:35Z
+    - InnerKeystone->service_catalog_url_for support region
     - rename InnerKeystone V3_0
     - get_object: support write FileHandle
     - put_object: support parameters etag, query_string
