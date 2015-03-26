@@ -1,7 +1,9 @@
 package Net::OpenStack::Swift::InnerKeystone::Base;
+use Carp;
 use Mouse;
 use JSON;
 use Furl;
+use Data::Validator;
 use namespace::clean -except => 'meta';
 
 has auth_token      => (is => 'rw'); 
@@ -26,17 +28,32 @@ has agent => (
 sub get_auth_params { die; }
 
 sub service_catalog_url_for {
-    my ($self, %args) = @_;
-    my $endpoint;
-    # このservice_catalog_url_forはregionでもしぼらないといけない
+    my $self = shift;
+    my $rule = Data::Validator->new(
+        endpoint_type => { isa => 'Str', default => sub {'object-store'} },
+        service_type  => { isa => 'Str', default => sub {'publicURL'}    },
+        region        => { isa => 'Str', default => undef },
+    );
+    my $args = $rule->validate(@_);
+
+    my $found_endpoint;
     foreach my $service_catelog (@{ $self->service_catalog }) {
-        if ($args{service_type} eq $service_catelog->{type}) {
-            # endpointsの中は配列なので複数ある可能性がありそう。複数あった場合どうなるんだろう
-            $endpoint = $service_catelog->{endpoints}->[0]->{$args{endpoint_type}}; 
+        if ($args->{service_type} eq $service_catelog->{type}) {
+            foreach my $endpoint (@{ $service_catelog->{endpoints} }) {
+                if (exists $endpoint->{ $args->{endpoint_type} }) {
+                    $found_endpoint = $endpoint;
+                    # filtering match Region
+                    if ($args->{region} and $args->{region} ne $endpoint->{region}) {
+                        $found_endpoint = undef;
+                    }
+                }
+            }
         } 
     }
-    # endpoint見つからないエラー
-    return $endpoint;
+    unless ($found_endpoint) {
+        croak sprintf("%s endpoint for %s service not found", $args->{endpoint_type}, $args->{service_type});
+    }
+    return $found_endpoint->{ $args->{endpoint_type} };
 }
 
 
