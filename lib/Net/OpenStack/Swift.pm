@@ -10,10 +10,10 @@ use namespace::clean -except => 'meta';
 our $VERSION = "0.03";
 
 
-has auth_version => (is => 'rw', required => 1, default => sub {"2.0"}); 
-has auth_url     => (is => 'rw', required => 1); 
-has user         => (is => 'rw', required => 1); 
-has password     => (is => 'rw', required => 1); 
+has auth_version => (is => 'rw', required => 1, default => sub {"2.0"});
+has auth_url     => (is => 'rw', required => 1);
+has user         => (is => 'rw', required => 1);
+has password     => (is => 'rw', required => 1);
 has tenant_name  => (is => 'rw');
 has storage_url  => (is => 'rw');
 has token        => (is => 'rw');
@@ -24,9 +24,9 @@ has agent => (
         my $self = shift;
         my $agent = Furl->new(
             #agent    => "Mozilla/5.0",
-        );  
+        );
         return $agent;
-    },  
+    },
 );
 
 sub _request {
@@ -298,14 +298,14 @@ sub delete_container {
         container_name => { isa => 'Str'},
     );
     my $args = $rule->validate(@_);
- 
+
     my $request_header = ['X-Auth-Token' => $args->{token}];
     my $request_url = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
     debugf("delete_container() request header %s", $request_header);
     debugf("delete_container() request url: %s", $request_url);
- 
+
     my $res = $self->_request({
-        method => 'DELETE', url => $request_url, header => $request_header, 
+        method => 'DELETE', url => $request_url, header => $request_header,
         content => []
     });
 
@@ -328,18 +328,18 @@ sub get_object {
         write_code     => { isa => 'CodeRef' },
     );
     my $args = $rule->validate(@_);
-    
+
     my $request_header = ['X-Auth-Token' => $args->{token}];
-    my $request_url    = sprintf "%s/%s/%s", $args->{url}, 
-        uri_escape($args->{container_name}), 
-        uri_escape($args->{object_name}); 
+    my $request_url    = sprintf "%s/%s/%s", $args->{url},
+        uri_escape($args->{container_name}),
+        uri_escape($args->{object_name});
     my %special_headers = ('Content-Length' => undef);
     debugf("get_object() request header %s", $request_header);
     debugf("get_object() request special headers: %s", $request_url);
     debugf("get_object() request url: %s", $request_url);
 
     my $request_params = {
-        method => 'GET', url => $request_url, header => $request_header, 
+        method => 'GET', url => $request_url, header => $request_header,
         special_headers => \%special_headers,
         write_code      => undef,
         write_file      => undef,
@@ -371,16 +371,16 @@ sub head_object {
         object_name    => { isa => 'Str'},
     );
     my $args = $rule->validate(@_);
- 
+
     my $request_header = ['X-Auth-Token' => $args->{token}];
-    my $request_url    = sprintf "%s/%s/%s", $args->{url}, 
-        uri_escape($args->{container_name}), 
-        uri_escape($args->{object_name}); 
+    my $request_url    = sprintf "%s/%s/%s", $args->{url},
+        uri_escape($args->{container_name}),
+        uri_escape($args->{object_name});
     debugf("head_object() request header %s", $request_header);
     debugf("head_object() request url: %s", $request_url);
 
     my $res = $self->_request({
-        method => 'HEAD', url => $request_url, header => $request_header, 
+        method => 'HEAD', url => $request_url, header => $request_header,
         content => []
     });
 
@@ -409,18 +409,18 @@ sub put_object {
 
     my $request_header = [
         'X-Auth-Token'   => $args->{token},
-        'Content-Length' => $args->{content_length}, 
-        'Content-Type'   => $args->{content_type}, 
+        'Content-Length' => $args->{content_length},
+        'Content-Type'   => $args->{content_type},
     ];
     if ($args->{etag}) {
         push @{$request_header}, ('ETag' => $args->{etag});
     }
- 
-    my $request_url = sprintf "%s/%s/%s", $args->{url}, 
-        uri_escape($args->{container_name}), 
-        uri_escape($args->{object_name}); 
+
+    my $request_url = sprintf "%s/%s/%s", $args->{url},
+        uri_escape($args->{container_name}),
+        uri_escape($args->{object_name});
     if ($args->{query_string}) {
-        $request_url .= '?'.$args->{query_string}; 
+        $request_url .= '?'.$args->{query_string};
     }
     debugf("put_object() request header %s", $request_header);
     debugf("put_object() request url: %s", $request_url);
@@ -452,7 +452,7 @@ sub post_object {
     my $request_header = ['X-Auth-Token' => $args->{token}];
     my @additional_headers = %{ $args->{headers} };
     push @{$request_header}, @additional_headers;
-    my $request_url    = sprintf "%s/%s/%s", $args->{url}, 
+    my $request_url    = sprintf "%s/%s/%s", $args->{url},
         uri_escape($args->{container_name}),
         uri_escape($args->{object_name});
     debugf("post_object() request header %s", $request_header);
@@ -479,16 +479,16 @@ sub delete_object {
         object_name    => { isa => 'Str'},
     );
     my $args = $rule->validate(@_);
- 
+
     my $request_header = ['X-Auth-Token' => $args->{token}];
-    my $request_url = sprintf "%s/%s/%s", $args->{url}, 
-        uri_escape($args->{container_name}), 
-        uri_escape($args->{object_name}); 
+    my $request_url = sprintf "%s/%s/%s", $args->{url},
+        uri_escape($args->{container_name}),
+        uri_escape($args->{object_name});
     debugf("delete_object() request header %s", $request_header);
     debugf("delete_object() request url: %s", $request_url);
- 
+
     my $res = $self->_request({
-        method => 'DELETE', url => $request_url, header => $request_header, 
+        method => 'DELETE', url => $request_url, header => $request_header,
         content => []
     });
 
@@ -525,6 +525,17 @@ Net::OpenStack::Swift - Perl Bindings for the OpenStack Object Storage API, know
     # or,  storage_url and token can be omitted.
     my ($headers, $containers) = $sw->get_account();
 
+    # 1.0 auth
+    my $sw = Net::OpenStack::Swift->new(
+        auth_url       => 'https://auth-endpoint-url/1.0',
+
+        user           => 'region:user-id',
+        password       => 'secret-api-key',
+
+        # or private, if you are under the private network.
+        auth_version  => '1.0',
+        tenant_name   => 'public',
+    );
 
 =head1 DESCRIPTION
 
@@ -569,7 +580,7 @@ Get storage url and auth token.
 
     my ($storage_url, $token) = $sw->get_auth();
 
-response: 
+response:
 
 =over
 
@@ -619,7 +630,7 @@ Show account metadata.
 =head2 post_account
 
 Create, update, or delete account metadata.
-    
+
 =head2 get_container
 
 Show container details and list objects.
@@ -647,20 +658,20 @@ Create, update, or delete container metadata.
 Delete container.
 
     my $headers = $sw->delete_container(container_name => 'container1');
-    
+
 =head2 get_object
 
 Get object content and metadata.
 
-    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
-    my $etag = $sw->get_object(container_name => 'container_name1', object_name => 'masakystjpeg', 
+    open my $fh, ">>:raw", "hoge.jpeg" or die $!;
+    my $etag = $sw->get_object(container_name => 'container_name1', object_name => 'masakystjpeg',
         write_file => $fh,
     );
     # or chunked
-    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
-    my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg', 
+    open my $fh, ">>:raw", "hoge.jpeg" or die $!;
+    my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg',
         write_code => sub {
-            my ($status, $message, $headers, $chunk) = @_; 
+            my ($status, $message, $headers, $chunk) = @_;
             print $status;
             print length($chunk);
             print $fh $chunk;
@@ -694,7 +705,7 @@ Create or replace object.
 
     my $file = 'hoge.jpeg';
     open my $fh, '<', "./$file" or die;
-    my $headers = $sw->put_object(container_name => 'container1', 
+    my $headers = $sw->put_object(container_name => 'container1',
         object_name => 'hoge.jpeg', content => $fh, content_length => -s $file);
 
 =over
@@ -723,7 +734,7 @@ Delete object.
 
 =head1 Debug
 
-To print request/response Debug messages, $ENV{LM_DEBUG} must be true. 
+To print request/response Debug messages, $ENV{LM_DEBUG} must be true.
 
 example
 
