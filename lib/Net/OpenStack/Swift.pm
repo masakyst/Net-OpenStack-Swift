@@ -7,7 +7,7 @@ use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape debugf/;
 use Net::OpenStack::Swift::InnerKeystone;
 use namespace::clean -except => 'meta';
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 
 has auth_version => (is => 'rw', required => 1, default => sub {"2.0"});
@@ -540,7 +540,6 @@ Net::OpenStack::Swift - Perl Bindings for the OpenStack Object Storage API, know
 =head1 DESCRIPTION
 
 Perl Bindings for the OpenStack Object Storage API, known as Swift.
-Attention!! Keystone authorization is still only Identity API v2.0.
 
 =head1 METHODS
 
@@ -570,7 +569,7 @@ tenant name/project
 =item auth_version
 
 Optional.
-still only 2.0 (Keystone/Identity 2.0 API)
+default 2.0
 
 =back
 

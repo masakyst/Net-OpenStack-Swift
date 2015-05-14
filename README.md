@@ -20,10 +20,21 @@ Net::OpenStack::Swift - Perl Bindings for the OpenStack Object Storage API, know
     # or,  storage_url and token can be omitted.
     my ($headers, $containers) = $sw->get_account();
 
+    # 1.0 auth
+    my $sw = Net::OpenStack::Swift->new(
+        auth_url       => 'https://auth-endpoint-url/1.0',
+
+        user           => 'region:user-id',
+        password       => 'secret-api-key',
+
+        # or private, if you are under the private network.
+        auth_version  => '1.0',
+        tenant_name   => 'public',
+    );
+
 # DESCRIPTION
 
 Perl Bindings for the OpenStack Object Storage API, known as Swift.
-Attention!! Keystone authorization is still only Identity API v2.0.
 
 # METHODS
 
@@ -51,7 +62,7 @@ Creates a client.
 - auth\_version
 
     Optional.
-    still only 2.0 (Keystone/Identity 2.0 API)
+    default 2.0
 
 ## get\_auth
 
@@ -59,7 +70,7 @@ Get storage url and auth token.
 
     my ($storage_url, $token) = $sw->get_auth();
 
-response: 
+response:
 
 - storage\_url
 
@@ -128,21 +139,20 @@ Create, update, or delete container metadata.
 Delete container.
 
     my $headers = $sw->delete_container(container_name => 'container1');
-    
 
 ## get\_object
 
 Get object content and metadata.
 
-    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
-    my $etag = $sw->get_object(container_name => 'container_name1', object_name => 'masakystjpeg', 
+    open my $fh, ">>:raw", "hoge.jpeg" or die $!;
+    my $etag = $sw->get_object(container_name => 'container_name1', object_name => 'masakystjpeg',
         write_file => $fh,
     );
     # or chunked
-    open my $fh, ">>:raw", "hoge.jpeg" or die $!; 
-    my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg', 
+    open my $fh, ">>:raw", "hoge.jpeg" or die $!;
+    my $etag = $sw->get_object(container_name => 'container1', object_name => 'hoge.jpeg',
         write_code => sub {
-            my ($status, $message, $headers, $chunk) = @_; 
+            my ($status, $message, $headers, $chunk) = @_;
             print $status;
             print length($chunk);
             print $fh $chunk;
@@ -170,7 +180,7 @@ Create or replace object.
 
     my $file = 'hoge.jpeg';
     open my $fh, '<', "./$file" or die;
-    my $headers = $sw->put_object(container_name => 'container1', 
+    my $headers = $sw->put_object(container_name => 'container1',
         object_name => 'hoge.jpeg', content => $fh, content_length => -s $file);
 
 - content: Str|FileHandle
@@ -192,7 +202,7 @@ Delete object.
 
 # Debug
 
-To print request/response Debug messages, $ENV{LM\_DEBUG} must be true. 
+To print request/response Debug messages, $ENV{LM\_DEBUG} must be true.
 
 example
 

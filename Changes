@@ -2,6 +2,9 @@ Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
 
+0.04 2015-05-14T06:49:31Z
+    - Add support for 1.0 auth. (enatocron)
+
 0.03 2015-03-26T14:38:35Z
     - InnerKeystone->service_catalog_url_for support region
     - rename InnerKeystone V3_0
