@@ -12,6 +12,10 @@ Net::OpenStack::Swift - Perl Bindings for the OpenStack Object Storage API, know
         password       => 'password',
         tenant_name    => 'project_id',
         # auth_version => '2.0', # by default
+        # agent_options => +{
+        #    timeout    => 10,
+        #    user_agent => "Furl::HTTP",
+        #}  
     );
 
     my ($storage_url, $token) = $sw->get_auth();
@@ -63,6 +67,11 @@ Creates a client.
 
     Optional.
     default 2.0
+
+- agent\_options | HashRef
+
+    Optional.
+    Http Client options
 
 ## get\_auth
 

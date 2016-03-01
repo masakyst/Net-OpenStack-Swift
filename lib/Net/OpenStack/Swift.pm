@@ -6,8 +6,7 @@ use Data::Validator;
 use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape debugf/;
 use Net::OpenStack::Swift::InnerKeystone;
 use namespace::clean -except => 'meta';
-
-our $VERSION = "0.04";
+our $VERSION = "0.05";
 
 
 has auth_version => (is => 'rw', required => 1, default => sub {"2.0"});
@@ -17,15 +16,17 @@ has password     => (is => 'rw', required => 1);
 has tenant_name  => (is => 'rw');
 has storage_url  => (is => 'rw');
 has token        => (is => 'rw');
+has agent_options => (is => 'rw', isa => 'HashRef', default => sub{+{ timeout => 10 }});
 has agent => (
     is      => 'rw',
     lazy    => 1,
     default => sub {
         my $self = shift;
-        my $agent = Furl->new(
-            #agent    => "Mozilla/5.0",
-        );
-        return $agent;
+        my $furl_options = +{
+            timeout => $self->agent_options->{timeout} || 10
+        };
+        $furl_options->{agent} ||= $self->agent_options->{user_agent};
+        return Furl->new(%{$furl_options});
     },
 );
 
@@ -53,6 +54,7 @@ sub auth_keystone {
         password => $self->password,
         tenant_name => $self->tenant_name,
     );
+    $ksclient->agent($self->agent);
     my $auth_token = $ksclient->auth();
     my $endpoint = $ksclient->service_catalog_url_for(service_type=>'object-store', endpoint_type=>'publicURL');
     croak "Not found endpoint type 'object-store'" unless $endpoint;
@@ -517,6 +519,10 @@ Net::OpenStack::Swift - Perl Bindings for the OpenStack Object Storage API, know
         password       => 'password',
         tenant_name    => 'project_id',
         # auth_version => '2.0', # by default
+        # agent_options => +{
+        #    timeout    => 10,
+        #    user_agent => "Furl::HTTP",
+        #}  
     );
 
     my ($storage_url, $token) = $sw->get_auth();
@@ -570,6 +576,11 @@ tenant name/project
 
 Optional.
 default 2.0
+
+=item agent_options | HashRef
+
+Optional.
+Http Client options
 
 =back
 

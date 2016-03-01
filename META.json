@@ -4,7 +4,7 @@
       "masakyst <masakyst.public@gmail.com>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v2.3.0, CPAN::Meta::Converter version 2.142060",
+   "generated_by" : "Minilla/v2.3.0, CPAN::Meta::Converter version 2.150005",
    "license" : [
       "perl_5"
    ],
@@ -73,9 +73,10 @@
          "web" : "https://github.com/masakyst/Net-OpenStack-Swift"
       }
    },
-   "version" : "0.04",
+   "version" : "0.05",
    "x_contributors" : [
-      "Masaaki Saito <masakyst.mobile@gmail.com>",
-      "RenatoCRON <renato.cron@gmail.com>"
-   ]
+      "RenatoCRON <renato.cron@gmail.com>",
+      "Masaaki Saito <masakyst.mobile@gmail.com>"
+   ],
+   "x_serialization_backend" : "JSON::PP version 2.27203"
 }

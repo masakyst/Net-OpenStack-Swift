@@ -2,6 +2,9 @@ Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
 
+0.05 2016-03-01T06:31:56Z
+    - Enable to set Http Client timeout, user_agent options
+
 0.04 2015-05-14T06:49:31Z
     - Add support for 1.0 auth. (enatocron)
 
