@@ -222,4 +222,4 @@ it under the same terms as Perl itself.
 
 # AUTHOR
 
-masakyst &lt;masakyst.public@gmail.com>
+masakyst <masakyst.public@gmail.com>
