@@ -12,6 +12,7 @@ Net::OpenStack::Swift - Perl Bindings for the OpenStack Object Storage API, know
         password       => 'password',
         tenant_name    => 'project_id',
         # auth_version => '2.0', # by default
+        # timeout      => 10, # request timeout. default.
     );
 
     my ($storage_url, $token) = $sw->get_auth();
