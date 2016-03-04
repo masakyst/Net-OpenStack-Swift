@@ -8,12 +8,11 @@ use Net::OpenStack::Swift::InnerKeystone;
 use namespace::clean -except => 'meta';
 our $VERSION = "0.05";
 
-
 has auth_version => (is => 'rw', required => 1, default => sub {"2.0"});
-has auth_url     => (is => 'rw', required => 1);
-has user         => (is => 'rw', required => 1);
-has password     => (is => 'rw', required => 1);
-has tenant_name  => (is => 'rw');
+has auth_url     => (is => 'rw', required => 1, default => sub { $ENV{OS_AUTH_URL} });
+has user         => (is => 'rw', required => 1, default => sub { $ENV{OS_USERNAME} });
+has password     => (is => 'rw', required => 1, default => sub { $ENV{OS_PASSWORD} });
+has tenant_name  => (is => 'rw', required => 1, default => sub { $ENV{OS_TENANT_NAME} });
 has storage_url  => (is => 'rw');
 has token        => (is => 'rw');
 has agent_options => (is => 'rw', isa => 'HashRef', default => sub{+{ timeout => 10 }});
@@ -740,6 +739,29 @@ Create or update object metadata.
 Delete object.
 
     my $headers = $sw->delete_object(container_name => 'container1', object_name => 'hoge.jpeg');
+
+
+=head1 Command Line Tool
+
+perl client for the Swift API. a command-line script (swift.pl).
+
+setup openstack environments
+
+    $ export OS_AUTH_URL='https://*******'
+    $ export OS_TENANT_NAME='*******'
+    $ export OS_USERNAME='*******'
+    $ export OS_PASSWORD='************'
+
+cli examples
+
+    $ swift.pl put container1
+    $ swift.pl put container1 hello.txt (upload file)
+    $ swift.pl list
+    $ swift.pl list container1
+    $ swift.pl list container1/hello.txt
+    $ swift.pl get container1/hello.txt > hello.txt (download file)
+    $ swift.pl delete container1/hello.txt
+    $ swift.pl delete container1
 
 
 =head1 Debug

@@ -28,4 +28,6 @@ cover_db/
 
 MYMETA.*
 
+.swift.pl.conf
+
 /Net-OpenStack-Swift-*
