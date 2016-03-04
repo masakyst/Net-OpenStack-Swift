@@ -6,7 +6,7 @@ use Data::Validator;
 use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape debugf/;
 use Net::OpenStack::Swift::InnerKeystone;
 use namespace::clean -except => 'meta';
-our $VERSION = "0.05";
+our $VERSION = "0.06";
 
 has auth_version => (is => 'rw', required => 1, default => sub {"2.0"});
 has auth_url     => (is => 'rw', required => 1, default => sub { $ENV{OS_AUTH_URL} });

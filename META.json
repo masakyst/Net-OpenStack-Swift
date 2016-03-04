@@ -42,12 +42,14 @@
       },
       "runtime" : {
          "requires" : {
+            "App::Rad" : "0",
             "Data::Validator" : "0",
             "Furl" : "0",
             "IO::Socket::SSL" : "0",
             "JSON" : "0",
             "Log::Minimal" : "0",
             "Mouse" : "0",
+            "Text::ASCIITable" : "0",
             "URI::Escape" : "0",
             "namespace::clean" : "0"
          }
@@ -73,7 +75,7 @@
          "web" : "https://github.com/masakyst/Net-OpenStack-Swift"
       }
    },
-   "version" : "0.05",
+   "version" : "0.06",
    "x_contributors" : [
       "RenatoCRON <renato.cron@gmail.com>",
       "Masaaki Saito <masakyst.mobile@gmail.com>"
