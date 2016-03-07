@@ -3,9 +3,12 @@
 use strict;
 use warnings;
 use App::Rad;
+use Path::Tiny;
 use File::Basename;
 use Text::ASCIITable;
 use Net::OpenStack::Swift;
+
+use Data::Dumper;
 
 sub setup {
     my $c = shift;
@@ -15,6 +18,8 @@ sub setup {
         'get'      => 'Get object content.',
         'put'      => 'Create or replace object and container.',
         'delete'   => 'Delete container/object.',
+        'download' => 'Download container/object.',
+        'upload'   => 'Upload container/object.',
     });
 
     $c->stash->{sw} = Net::OpenStack::Swift->new;
@@ -152,3 +157,96 @@ sub delete {
     }
     return $t;
 }
+
+sub download {
+    auth(@_);
+    my $c = shift;
+    die "ARGV" if scalar @ARGV >= 2;
+    my $target = $ARGV[0] //= '';
+
+    my ($container_name, $object_name) = split '/', $target;
+    die "container name is required." unless $container_name;
+    if ($object_name) {
+        $object_name =~ s/\*/\(\.\*\?\)/g; 
+    }
+
+    # todo: このへんたいわで[y/n]出すか?
+    if (-d $container_name) {
+        #die "already exists directory [$container_name]\n";
+    }
+    else {
+        mkdir "$container_name";
+    }
+
+
+    #print Dumper($container_name);
+    #print Dumper($object_name);
+
+    # 一覧を取得して、ここから正規表現に一致するファイルだけ取る
+    # *のみだったら全部取った方が早い
+    my @matches = ();
+    my ($headers, $containers) = $c->stash->{sw}->get_container(container_name => $container_name);
+    # print Dumper($containers);
+    for my $container (@{ $containers }) {
+        if ($container->{name} =~ /$object_name/) {
+            push @matches, $container->{name};
+        }
+    }
+    #print Dumper \@matches;
+
+    for my $file_name (@matches) {
+        my $fh = path($container_name, $file_name)->openw;  #$binmode
+        my $etag = $c->stash->{sw}->get_object(container_name => $container_name, object_name => $file_name,
+            write_file => $fh,
+        );
+        print "downloaded $container_name/$file_name\n";
+    }
+    return undef;
+}
+
+sub upload {
+    auth(@_);
+    my $c = shift;
+    die "ARGV" if scalar @ARGV >= 2;
+    my $target = $ARGV[0] //= '';
+
+    my ($container_name, $object_name) = split '/', $target;
+    die "container name is required." unless $container_name;
+
+    my @local_files = glob "${container_name}/*";
+    #print Dumper \@local_files;
+
+    if ($object_name) {
+        $object_name =~ s/\*/\(\.\*\?\)/g; 
+    }
+    else {
+        $object_name = '(.*?)'; 
+    }
+
+    #print Dumper($container_name);
+    #print Dumper($object_name);
+
+
+    my @matches = ();
+    for my $local_file (@local_files) {
+        my $basename = basename($local_file);
+        if ($basename =~ /$object_name/) {
+            push @matches, $basename;
+        }
+    }
+    #print Dumper \@matches;
+ 
+    # put object
+    my ($headers, $containers);
+    if (scalar @matches) {
+        for (@matches) {
+            my $fh = path($container_name, $_)->openr;  #$binmode
+            my $etag = $c->stash->{sw}->put_object(
+                container_name => $container_name, object_name => $_, 
+                content => $fh, content_length => -s path($container_name, $_)->absolute);
+            print "uploaded $container_name/$_\n";
+        }
+    }
+
+    return undef;
+} 
