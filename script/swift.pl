@@ -1,4 +1,6 @@
 #!/usr/bin/env perl
+#
+#http://docs.openstack.org/ja/user-guide/cli_swift_pseudo_hierarchical_folders_directories.html
 
 use strict;
 use warnings;
@@ -7,6 +9,7 @@ use Path::Tiny;
 use File::Basename;
 use Text::ASCIITable;
 use Net::OpenStack::Swift;
+use Parallel::Fork::BossWorkerAsync;
 
 use Data::Dumper;
 
@@ -43,8 +46,11 @@ sub list {
     auth(@_);
     my $c = shift;
     my $target = $ARGV[0] //= '';
+    print Dumper($target);
     my ($container_name, $object_name) = split '/', $target;
     $container_name ||= '/';
+    print Dumper($container_name);
+    print Dumper($object_name);
 
     my $t;
     # head object
@@ -101,6 +107,10 @@ sub put {
     my $local_path = $ARGV[1] //= '';
     my ($container_name, $object_name) = split '/', $target;
     die "container name is required." unless $container_name;
+
+    print Dumper($container_name);
+    print Dumper($object_name);
+    print Dumper($local_path);
   
     # put object
     my $t;
@@ -109,9 +119,9 @@ sub put {
         my $basename = basename($local_path);
         open my $fh, '<', "./$local_path" or die "failed to open: $!";
         my $etag = $c->stash->{sw}->put_object(
-            container_name => $container_name, object_name => $basename, 
+            container_name => $target, object_name => $basename, 
             content => $fh, content_length => -s $local_path);
-        my $headers = $c->stash->{sw}->head_object(container_name => $container_name, object_name => $basename);
+        my $headers = $c->stash->{sw}->head_object(container_name => $target, object_name => $basename);
         $t = Text::ASCIITable->new({headingText => "${basename} object"});
         $t->setCols('key', 'value');
         for my $key (sort keys %{ $headers }) {
@@ -120,7 +130,7 @@ sub put {
     }
     # put container
     else {
-        ($headers, $containers) = $c->stash->{sw}->put_container(container_name => $container_name);
+        ($headers, $containers) = $c->stash->{sw}->put_container(container_name => $target);
         my $t = Text::ASCIITable->new({headingText => 'response header'});
         $t->setCols(sort keys %{ $headers });
         $t->addRow(map { $headers->{$_} } sort keys %{ $headers });
@@ -134,6 +144,10 @@ sub delete {
     my $target = $ARGV[0] //= '';
     my ($container_name, $object_name) = split '/', $target;
     die "container name is required." unless $container_name;
+
+    print Dumper($container_name);
+    print Dumper($object_name);
+    exit;
 
     my $t;
     # delete object
@@ -189,17 +203,45 @@ sub download {
     # print Dumper($containers);
     for my $container (@{ $containers }) {
         if ($container->{name} =~ /$object_name/) {
-            push @matches, $container->{name};
+            push @matches, {container_name =>$container_name , object_name => $container->{name}};
         }
     }
     #print Dumper \@matches;
 
-    for my $file_name (@matches) {
-        my $fh = path($container_name, $file_name)->openw;  #$binmode
-        my $etag = $c->stash->{sw}->get_object(container_name => $container_name, object_name => $file_name,
+    # parallel
+    #my $bw = Parallel::Fork::BossWorkerAsync->new(
+    #    work_handler => sub {
+    #        my ($job) = @_;
+    #        my $fh = path($job->{container_name}, $job->{object_name})->openw;  #$binmode
+    #        my $etag = $c->stash->{sw}->get_object(
+    #            container_name => $job->{container_name}, 
+    #            object_name => $job->{object_name},
+    #            write_file => $fh,
+    #        );
+    #        return $job;
+    #    },  
+    #    result_handler => sub {
+    #        my ($job) = @_; 
+    #        printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
+    #        return $job;
+    #    },  
+    #    worker_count => 5,
+    #);
+    #$bw->add_work(@matches);
+    #while($bw->pending) {
+    #    my $ref = $bw->get_result;
+    #}
+    #$bw->shut_down;
+
+
+    for my $job (@matches) {
+        my $fh = path($job->{container_name}, $job->{object_name})->openw;  #$binmode
+        my $etag = $c->stash->{sw}->get_object(
+            container_name => $job->{container_name}, 
+            object_name => $job->{object_name},
             write_file => $fh,
         );
-        print "downloaded $container_name/$file_name\n";
+        printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
     }
     return undef;
 }

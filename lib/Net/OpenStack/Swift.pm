@@ -1,12 +1,19 @@
 package Net::OpenStack::Swift;
 use Carp;
 use Mouse;
+use Mouse::Util::TypeConstraints;
 use JSON;
+use Path::Tiny;
 use Data::Validator;
 use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape debugf/;
 use Net::OpenStack::Swift::InnerKeystone;
 use namespace::clean -except => 'meta';
 our $VERSION = "0.06";
+
+
+subtype 'Path' => as 'Path::Tiny';
+coerce  'Path' => from 'Str' => via { Path::Tiny->new($_) };
+
 
 has auth_version => (is => 'rw', required => 1, default => sub {"2.0"});
 has auth_url     => (is => 'rw', required => 1, default => sub { $ENV{OS_AUTH_URL} });
@@ -32,7 +39,18 @@ has agent => (
 sub _request {
     my $self = shift;
     my $args = shift;
-    my $res = $self->agent->request(
+    
+    my $furl_options = +{
+        timeout => $self->agent_options->{timeout} || 10
+    };
+    $furl_options->{agent} ||= $self->agent_options->{user_agent};
+    my $furl = Furl->new(%{$furl_options});
+
+    # single instance
+    #my $res = $self->agent->request(
+
+    # parallel instance
+    my $res = $furl->request(
         method          => $args->{method},
         url             => $args->{url},
         special_headers => $args->{special_headers},
@@ -168,10 +186,11 @@ sub get_container {
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
         marker         => { isa => 'Str', default => undef },
         limit          => { isa => 'Int', default => undef },
         prefix         => { isa => 'Str', default => undef },
+        delimiter      => { isa => 'Str', default => undef },
         end_marker     => { isa => 'Str', default => undef },
     );
     my $args = $rule->validate(@_);
@@ -187,12 +206,15 @@ sub get_container {
     if ($args->{prefix}) {
         push @qs, sprintf("prefix=%s", uri_escape($args->{prefix}));
     }
+    if ($args->{delimiter}) {
+        push @qs, sprintf("delimiter=%s", uri_escape($args->{delimiter}));
+    }
     if ($args->{end_marker}) {
         push @qs, sprintf("end_marker=%s", uri_escape($args->{end_marker}));
     }
 
     my $request_header = ['X-Auth-Token' => $args->{token}];
-    my $request_url    = sprintf "%s/%s?%s", $args->{url}, uri_escape($args->{container_name}), join('&', @qs);
+    my $request_url    = sprintf "%s/%s?%s", $args->{url}, uri_escape($args->{container_name}->stringify), join('&', @qs);
     debugf("get_container() request header %s", $request_header);
     debugf("get_container() request url: %s",   $request_url);
 
@@ -213,12 +235,12 @@ sub head_container {
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
     );
     my $args = $rule->validate(@_);
 
     my $request_header = ['X-Auth-Token' => $args->{token}];
-    my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
+    my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name}->stringify);
     debugf("head_container() request header %s", $request_header);
     debugf("head_container() request url: %s",   $args->{url});
 
@@ -236,15 +258,23 @@ sub head_container {
 
 sub put_container {
     my $self = shift;
+    use Data::Dumper;
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
+        content_length => { isa => 'Int', default => sub { 0 } },
+        content_type   => { isa => 'Str', default => 'application/directory'},
     );
     my $args = $rule->validate(@_);
 
-    my $request_header = ['X-Auth-Token' => $args->{token}];
-    my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
+    my $request_header = [
+        'X-Auth-Token' => $args->{token},
+        'Content-Length' => $args->{content_length},
+        'Content-Type'   => $args->{content_type},
+    ];
+
+    my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name}->stringify);
     debugf("put_account() request header %s", $request_header);
     debugf("put_account() request url: %s",   $request_url);
 
@@ -265,17 +295,18 @@ sub post_container {
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
         headers        => { isa => 'HashRef'},
     );
     my $args = $rule->validate(@_);
+
     my $request_header = ['X-Auth-Token' => $args->{token}];
     unless (exists $args->{headers}->{'Content-Length'} || exists($args->{headers}->{'content-length'})) {
         $args->{headers}->{'Content-Length'} = 0;
     }
     my @additional_headers = %{ $args->{headers} };
     push @{$request_header}, @additional_headers;
-    my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
+    my $request_url    = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name}->stringify);
     debugf("post_container() request header %s", $request_header);
     debugf("post_container() request url: %s",   $request_url);
 
@@ -296,12 +327,15 @@ sub delete_container {
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
     );
     my $args = $rule->validate(@_);
 
+    # corecing nested path
+    #$args->{container_name} = path($args->{container_name})->stringify;
+
     my $request_header = ['X-Auth-Token' => $args->{token}];
-    my $request_url = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name});
+    my $request_url = sprintf "%s/%s", $args->{url}, uri_escape($args->{container_name}->stringify);
     debugf("delete_container() request header %s", $request_header);
     debugf("delete_container() request url: %s", $request_url);
 
@@ -323,7 +357,7 @@ sub get_object {
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url },
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
         object_name    => { isa => 'Str'},
         write_file     => { isa => 'FileHandle', xor => [qw(write_code)] },
         write_code     => { isa => 'CodeRef' },
@@ -332,7 +366,7 @@ sub get_object {
 
     my $request_header = ['X-Auth-Token' => $args->{token}];
     my $request_url    = sprintf "%s/%s/%s", $args->{url},
-        uri_escape($args->{container_name}),
+        uri_escape($args->{container_name}->stringify),
         uri_escape($args->{object_name});
     my %special_headers = ('Content-Length' => undef);
     debugf("get_object() request header %s", $request_header);
@@ -368,14 +402,14 @@ sub head_object {
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
         object_name    => { isa => 'Str'},
     );
     my $args = $rule->validate(@_);
 
     my $request_header = ['X-Auth-Token' => $args->{token}];
     my $request_url    = sprintf "%s/%s/%s", $args->{url},
-        uri_escape($args->{container_name}),
+        uri_escape($args->{container_name}->stringify),
         uri_escape($args->{object_name});
     debugf("head_object() request header %s", $request_header);
     debugf("head_object() request url: %s", $request_url);
@@ -398,7 +432,7 @@ sub put_object {
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
         object_name    => { isa => 'Str'},
         content        => { isa => 'Str|FileHandle'},
         content_length => { isa => 'Int', default => sub { 0 } },
@@ -418,7 +452,7 @@ sub put_object {
     }
 
     my $request_url = sprintf "%s/%s/%s", $args->{url},
-        uri_escape($args->{container_name}),
+        uri_escape($args->{container_name}->stringify),
         uri_escape($args->{object_name});
     if ($args->{query_string}) {
         $request_url .= '?'.$args->{query_string};
@@ -445,16 +479,17 @@ sub post_object {
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
         object_name    => { isa => 'Str'},
         headers        => { isa => 'HashRef'},
     );
     my $args = $rule->validate(@_);
+
     my $request_header = ['X-Auth-Token' => $args->{token}];
     my @additional_headers = %{ $args->{headers} };
     push @{$request_header}, @additional_headers;
     my $request_url    = sprintf "%s/%s/%s", $args->{url},
-        uri_escape($args->{container_name}),
+        uri_escape($args->{container_name}->stringify),
         uri_escape($args->{object_name});
     debugf("post_object() request header %s", $request_header);
     debugf("post_object() request url: %s",   $request_url);
@@ -476,14 +511,14 @@ sub delete_object {
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
-        container_name => { isa => 'Str'},
+        container_name => { isa => 'Path', coerce => 1 },
         object_name    => { isa => 'Str'},
     );
     my $args = $rule->validate(@_);
 
     my $request_header = ['X-Auth-Token' => $args->{token}];
     my $request_url = sprintf "%s/%s/%s", $args->{url},
-        uri_escape($args->{container_name}),
+        uri_escape($args->{container_name}->stringify),
         uri_escape($args->{object_name});
     debugf("delete_object() request header %s", $request_header);
     debugf("delete_object() request url: %s", $request_url);
