@@ -125,7 +125,7 @@ sub get {
     _auth(@_);
     my $c = shift;
     my $target = $ARGV[0] //= '';
-    my ($container_name, $object_name) = split '/', $target;
+    my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "object name is required." unless $object_name;
 
     my $fh = *STDOUT;
