@@ -39,13 +39,8 @@ sub auth {
     }
 }
 
-App::Rad->run;
-
-
-sub list {
-    auth(@_);
-    my $c = shift;
-    my $target = $ARGV[0] //= '/';
+sub path_parts {
+    my $target = shift;
     my $path = path($target);
     my ($container_name, $object_name);
     my $prefix    = '';
@@ -72,6 +67,51 @@ sub list {
             $object_name    = $parts[1];
         }
     }
+    return ($container_name, $object_name, $prefix, $delimiter);
+    
+}
+
+App::Rad->run;
+
+
+sub list {
+    auth(@_);
+    my $c = shift;
+    my $target = $ARGV[0] //= '/';
+
+    my ($container_name, $object_name, $prefix, $delimiter) = path_parts($target);
+    #print Dumper($container_name);
+    #print Dumper($object_name);
+    #print Dumper($prefix);
+    #print Dumper($delimiter);
+    #exit;
+    
+    #my $path = path($target);
+    #my ($container_name, $object_name);
+    #my $prefix    = '';
+    #my $delimiter = '/';
+
+    ## directory
+    #if ($target =~ /\/$/) {
+    #    my @parts = split '/', $path->stringify, 2;
+    #    $container_name = $parts[0] || '/';
+    #    unless ($path->dirname eq '.' || $path->dirname eq '/') {
+    #        $prefix = sprintf "%s/", $parts[1];
+    #    }
+    #}
+    ## object
+    #else {
+    #    # top level container
+    #    if ($path->dirname eq '.') {
+    #        $container_name = $path->basename;
+    #    }
+    #    # other objects
+    #    else {
+    #        my @parts = split '/', $path->stringify, 2;
+    #        $container_name = $parts[0];
+    #        $object_name    = $parts[1];
+    #    }
+    #}
 
     my $t;
     # head object
@@ -169,12 +209,7 @@ sub delete {
     auth(@_);
     my $c = shift;
     my $target = $ARGV[0] //= '';
-    my ($container_name, $object_name) = split '/', $target;
-    die "container name is required." unless $container_name;
-
-    print Dumper($container_name);
-    print Dumper($object_name);
-    exit;
+    my ($container_name, $object_name, $prefix, $delimiter) = path_parts($target);
 
     my $t;
     # delete object
