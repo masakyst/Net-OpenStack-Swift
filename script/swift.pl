@@ -228,16 +228,20 @@ sub download {
     print "object_name: ", Dumper($object_name);
 
     # 一覧を取得して、ここから正規表現に一致するファイルだけ取る
-    # *のみだったら全部取った方が早い
+    #todo: *のみだったら全部取った方が早い
     my @matches = ();
     my ($headers, $containers) = $c->stash->{sw}->get_container(container_name => $container_name);
-    print Dumper($containers);
+    #print Dumper($containers);
     for my $container (@{ $containers }) {
         if ($container->{name} =~ /$object_name/) {
-            push @matches, {container_name =>$container_name , object_name => $container->{name}};
+            push @matches, {
+                container_name => $container_name, 
+                object_name    => $container->{name},
+                content_type   => $container->{content_type}
+            };
         }
     }
-    print Dumper \@matches;
+    #print Dumper \@matches;
 
     # parallel
     #my $bw = Parallel::Fork::BossWorkerAsync->new(
@@ -266,12 +270,18 @@ sub download {
 
     # blocking
     for my $job (@matches) {
-        my $fh = path($job->{container_name}, $job->{object_name})->openw;  #$binmode
-        my $etag = $c->stash->{sw}->get_object(
-            container_name => $job->{container_name}, 
-            object_name => $job->{object_name},
-            write_file => $fh,
-        );
+        print Dumper($job);
+        if ($job->{content_type} eq 'application/directory') {
+            path($job->{container_name}, $job->{object_name})->mkpath;
+        }
+        else {
+            my $fh = path($job->{container_name}, $job->{object_name})->openw;  #$binmode
+            my $etag = $c->stash->{sw}->get_object(
+                container_name => $job->{container_name}, 
+                object_name => $job->{object_name},
+                write_file => $fh,
+            );
+        }
         printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
     }
     return undef;
@@ -319,14 +329,6 @@ sub upload {
         }
     }
 
-    #for my $local_file (@local_files) {
-    #    my $basename = basename($local_file);
-    #    if ($basename =~ /$object_name/) {
-    #        push @matches, $basename;
-    #    }
-    #}
-    #print Dumper \@matches;
- 
     # put object
     #todo: top level containerだけは作っておく必要がある
     my ($headers, $containers);
