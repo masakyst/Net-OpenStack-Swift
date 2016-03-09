@@ -68,7 +68,6 @@ sub _path_parts {
         }
     }
     return ($container_name, $object_name, $prefix, $delimiter);
-    
 }
 
 App::Rad->run;
@@ -204,10 +203,14 @@ sub download {
     die "ARGV" if scalar @ARGV >= 2;
     my $target = $ARGV[0] //= '';
 
-    my ($container_name, $object_name) = split '/', $target;
+    #my ($container_name, $object_name) = split '/', $target;
+    my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "container name is required." unless $container_name;
     if ($object_name) {
         $object_name =~ s/\*/\(\.\*\?\)/g; 
+    }
+    else {
+        $object_name = '(.*?)'; 
     }
 
     # todo: このへんたいわで[y/n]出すか?
@@ -215,24 +218,26 @@ sub download {
         #die "already exists directory [$container_name]\n";
     }
     else {
+        #todo: 複数階層の場合
         mkdir "$container_name";
     }
 
 
-    #print Dumper($container_name);
-    #print Dumper($object_name);
+    print "target: ", Dumper($target);
+    print "container_name:", Dumper($container_name);
+    print "object_name: ", Dumper($object_name);
 
     # 一覧を取得して、ここから正規表現に一致するファイルだけ取る
     # *のみだったら全部取った方が早い
     my @matches = ();
     my ($headers, $containers) = $c->stash->{sw}->get_container(container_name => $container_name);
-    # print Dumper($containers);
+    print Dumper($containers);
     for my $container (@{ $containers }) {
         if ($container->{name} =~ /$object_name/) {
             push @matches, {container_name =>$container_name , object_name => $container->{name}};
         }
     }
-    #print Dumper \@matches;
+    print Dumper \@matches;
 
     # parallel
     #my $bw = Parallel::Fork::BossWorkerAsync->new(
@@ -259,7 +264,7 @@ sub download {
     #}
     #$bw->shut_down;
 
-
+    # blocking
     for my $job (@matches) {
         my $fh = path($job->{container_name}, $job->{object_name})->openw;  #$binmode
         my $etag = $c->stash->{sw}->get_object(
@@ -278,10 +283,13 @@ sub upload {
     die "ARGV" if scalar @ARGV >= 2;
     my $target = $ARGV[0] //= '';
 
-    my ($container_name, $object_name) = split '/', $target;
+    my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "container name is required." unless $container_name;
 
-    my @local_files = glob "${container_name}/*";
+    print Dumper($container_name);
+    print Dumper($object_name);
+
+    #my @local_files = glob "${container_name}/*";
     #print Dumper \@local_files;
 
     if ($object_name) {
@@ -291,28 +299,54 @@ sub upload {
         $object_name = '(.*?)'; 
     }
 
-    #print Dumper($container_name);
-    #print Dumper($object_name);
+    print Dumper($container_name);
+    print Dumper($object_name);
 
 
     my @matches = ();
-    for my $local_file (@local_files) {
-        my $basename = basename($local_file);
-        if ($basename =~ /$object_name/) {
-            push @matches, $basename;
+    my $iter = path($container_name)->iterator({
+        recurse         => 1,
+        follow_symlinks => 0,
+    }); 
+    while (my $local_path = $iter->()) {
+        print "local_path: ", Dumper($local_path->stringify);
+        #print "matche?: ", Dumper("$container_name/$object_name");
+        print "dir: ", Dumper($local_path->is_dir);
+        my $partial = "$container_name/$object_name";
+        my $basename = basename($local_path->stringify);
+        if ($local_path->stringify =~ /$partial/) {
+            push @matches, $local_path;
         }
     }
+
+    #for my $local_file (@local_files) {
+    #    my $basename = basename($local_file);
+    #    if ($basename =~ /$object_name/) {
+    #        push @matches, $basename;
+    #    }
+    #}
     #print Dumper \@matches;
  
     # put object
+    #todo: top level containerだけは作っておく必要がある
     my ($headers, $containers);
     if (scalar @matches) {
         for (@matches) {
-            my $fh = path($container_name, $_)->openr;  #$binmode
-            my $etag = $c->stash->{sw}->put_object(
-                container_name => $container_name, object_name => $_, 
-                content => $fh, content_length => -s path($container_name, $_)->absolute);
-            print "uploaded $container_name/$_\n";
+            print "path: ", Dumper $_->stringify;
+            my ($up_container, $up_object) = split '/', $_->stringify, 2;
+            print "path dirname: ", Dumper $up_container;
+            print "path basename: ", Dumper $up_object;
+            
+            if ($_->is_dir) {
+                my $res = $c->stash->{sw}->put_container(container_name => $_->stringify);                
+            }
+            else {
+                my $fh = $_->openr;  #$binmode
+                my $etag = $c->stash->{sw}->put_object(
+                    container_name => $up_container, object_name => $up_object, 
+                    content => $fh, content_length => -s $_->absolute);
+                print "uploaded $up_container/$up_object\n";
+            }
         }
     }
 
