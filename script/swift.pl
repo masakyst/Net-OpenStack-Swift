@@ -78,40 +78,7 @@ sub list {
     _auth(@_);
     my $c = shift;
     my $target = $ARGV[0] //= '/';
-
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
-    #print Dumper($container_name);
-    #print Dumper($object_name);
-    #print Dumper($prefix);
-    #print Dumper($delimiter);
-    #exit;
-    
-    #my $path = path($target);
-    #my ($container_name, $object_name);
-    #my $prefix    = '';
-    #my $delimiter = '/';
-
-    ## directory
-    #if ($target =~ /\/$/) {
-    #    my @parts = split '/', $path->stringify, 2;
-    #    $container_name = $parts[0] || '/';
-    #    unless ($path->dirname eq '.' || $path->dirname eq '/') {
-    #        $prefix = sprintf "%s/", $parts[1];
-    #    }
-    #}
-    ## object
-    #else {
-    #    # top level container
-    #    if ($path->dirname eq '.') {
-    #        $container_name = $path->basename;
-    #    }
-    #    # other objects
-    #    else {
-    #        my @parts = split '/', $path->stringify, 2;
-    #        $container_name = $parts[0];
-    #        $object_name    = $parts[1];
-    #    }
-    #}
 
     my $t;
     # head object
@@ -122,16 +89,17 @@ sub list {
         for my $key (sort keys %{ $headers }) {
             $t->addRow($key, $headers->{$key});
         }
-
     }
     # get_container
     else {
-        print "get_container\n";
         my ($headers, $containers) = $c->stash->{sw}->get_container(
             container_name => $container_name,
             delimiter      => $delimiter,
             prefix         => $prefix
         );
+        if (scalar @{ $containers } == 0) {
+            return "container ${target} is empty.";
+        }
         my $heading_text = "${container_name} container";
         my @label;
         if ($container_name eq '/') {
@@ -172,13 +140,9 @@ sub put {
     my $c = shift;
     my $target = $ARGV[0] //= '';
     my $local_path = $ARGV[1] //= '';
-    my ($container_name, $object_name) = split '/', $target;
+    my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "container name is required." unless $container_name;
 
-    print Dumper($container_name);
-    print Dumper($object_name);
-    print Dumper($local_path);
-  
     # put object
     my $t;
     my ($headers, $containers);
