@@ -30,7 +30,7 @@ sub setup {
     $c->stash->{token}       = undef;
 }
 
-sub auth {
+sub _auth {
     my $c = shift; 
     unless ($c->stash->{token}) {
         my ($storage_url, $token) = $c->stash->{sw}->get_auth();
@@ -39,7 +39,7 @@ sub auth {
     }
 }
 
-sub path_parts {
+sub _path_parts {
     my $target = shift;
     my $path = path($target);
     my ($container_name, $object_name);
@@ -75,11 +75,11 @@ App::Rad->run;
 
 
 sub list {
-    auth(@_);
+    _auth(@_);
     my $c = shift;
     my $target = $ARGV[0] //= '/';
 
-    my ($container_name, $object_name, $prefix, $delimiter) = path_parts($target);
+    my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     #print Dumper($container_name);
     #print Dumper($object_name);
     #print Dumper($prefix);
@@ -154,7 +154,7 @@ sub list {
 }
 
 sub get {
-    auth(@_);
+    _auth(@_);
     my $c = shift;
     my $target = $ARGV[0] //= '';
     my ($container_name, $object_name) = split '/', $target;
@@ -168,7 +168,7 @@ sub get {
 }
 
 sub put {
-    auth(@_);
+    _auth(@_);
     my $c = shift;
     my $target = $ARGV[0] //= '';
     my $local_path = $ARGV[1] //= '';
@@ -206,10 +206,10 @@ sub put {
 }
 
 sub delete {
-    auth(@_);
+    _auth(@_);
     my $c = shift;
     my $target = $ARGV[0] //= '';
-    my ($container_name, $object_name, $prefix, $delimiter) = path_parts($target);
+    my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
 
     my $t;
     # delete object
@@ -235,7 +235,7 @@ sub delete {
 }
 
 sub download {
-    auth(@_);
+    _auth(@_);
     my $c = shift;
     die "ARGV" if scalar @ARGV >= 2;
     my $target = $ARGV[0] //= '';
@@ -309,7 +309,7 @@ sub download {
 }
 
 sub upload {
-    auth(@_);
+    _auth(@_);
     my $c = shift;
     die "ARGV" if scalar @ARGV >= 2;
     my $target = $ARGV[0] //= '';
