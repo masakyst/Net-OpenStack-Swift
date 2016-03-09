@@ -45,12 +45,33 @@ App::Rad->run;
 sub list {
     auth(@_);
     my $c = shift;
-    my $target = $ARGV[0] //= '';
-    print Dumper($target);
-    my ($container_name, $object_name) = split '/', $target;
-    $container_name ||= '/';
-    print Dumper($container_name);
-    print Dumper($object_name);
+    my $target = $ARGV[0] //= '/';
+    my $path = path($target);
+    my ($container_name, $object_name);
+    my $prefix    = '';
+    my $delimiter = '/';
+
+    # directory
+    if ($target =~ /\/$/) {
+        my @parts = split '/', $path->stringify, 2;
+        $container_name = $parts[0] || '/';
+        unless ($path->dirname eq '.' || $path->dirname eq '/') {
+            $prefix = sprintf "%s/", $parts[1];
+        }
+    }
+    # object
+    else {
+        # top level container
+        if ($path->dirname eq '.') {
+            $container_name = $path->basename;
+        }
+        # other objects
+        else {
+            my @parts = split '/', $path->stringify, 2;
+            $container_name = $parts[0];
+            $object_name    = $parts[1];
+        }
+    }
 
     my $t;
     # head object
@@ -61,10 +82,16 @@ sub list {
         for my $key (sort keys %{ $headers }) {
             $t->addRow($key, $headers->{$key});
         }
+
     }
-    # get container
+    # get_container
     else {
-        my ($headers, $containers) = $c->stash->{sw}->get_container(container_name => $container_name);
+        print "get_container\n";
+        my ($headers, $containers) = $c->stash->{sw}->get_container(
+            container_name => $container_name,
+            delimiter      => $delimiter,
+            prefix         => $prefix
+        );
         my $heading_text = "${container_name} container";
         my @label;
         if ($container_name eq '/') {
