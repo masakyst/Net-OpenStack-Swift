@@ -12,11 +12,11 @@ use Parallel::Fork::BossWorkerAsync;
 use Sys::CPU;
 
 
-my $ASYNC = $ENV{OS_SWIFT_ASYNC} || 0;
+my $ASYNC = $ENV{OS_SWIFT_ASYNC} || 1;
 
 sub setup {
     my $c = shift;
-    
+
     $c->register_commands({
         'list'     => 'Show container/object.',
         'get'      => 'Get object content.',
@@ -29,6 +29,15 @@ sub setup {
     $c->stash->{sw} = Net::OpenStack::Swift->new;
     $c->stash->{storage_url} = undef;
     $c->stash->{token}       = undef;
+
+    my $config_path = path($ENV{HOME}, '.swift.pl.conf');
+    if ($config_path->exists) {
+        $c->load_config($config_path);
+        $c->stash->{sw}->agent_options({
+            timeout    => $c->config->{timeout},
+            user_agent => $c->config->{user_agent},
+        });
+    }
 }
 
 sub _auth {
