@@ -230,6 +230,15 @@ cli examples
     $ swift.pl get container1/hello.txt > hello.txt (download file)
     $ swift.pl delete container1/hello.txt
     $ swift.pl delete container1
+    $ swift.pl donwload 'container1/*' (require quoting!)
+    $ swift.pl upload 'container1/*' (require quoting!)
+
+parallels beta support
+
+    environment OS_SWIFT_ASYNC=1
+
+    $ OS_SWIFT_ASYNC=1 swift.pl donwload 'container1/*'
+    $ OS_SWIFT_ASYNC=1 swift.pl upload 'container1/*'
 
 # Debug
 

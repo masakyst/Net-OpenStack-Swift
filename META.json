@@ -54,7 +54,8 @@
             "Sys::CPU" : "0",
             "Text::ASCIITable" : "0",
             "URI::Escape" : "0",
-            "namespace::clean" : "0"
+            "namespace::clean" : "0",
+            "perl" : "5.010_001"
          }
       },
       "test" : {
@@ -78,7 +79,7 @@
          "web" : "https://github.com/masakyst/Net-OpenStack-Swift"
       }
    },
-   "version" : "0.06",
+   "version" : "0.07",
    "x_contributors" : [
       "RenatoCRON <renato.cron@gmail.com>",
       "Masaaki Saito <masakyst.mobile@gmail.com>"

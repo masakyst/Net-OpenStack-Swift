@@ -2,6 +2,10 @@ Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
 
+0.07 2016-03-11T03:00:48Z
+    - Add support pseudo hierarchical folders and directories
+    - Add support (beta) parallel downloads and uploads (OS_SWIFT_ASYNC=1)
+
 0.06 2016-03-04T08:53:13Z
     - Add command-line script (swift.pl)
     - Add support OS_* environments (OS_AUTH_URL,OS_TENANT_NAME,OS_USERNAME,OS_PASSWORD)
