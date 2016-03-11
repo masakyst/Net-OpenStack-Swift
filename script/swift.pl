@@ -1,6 +1,4 @@
 #!/usr/bin/env perl
-#
-#http://docs.openstack.org/ja/user-guide/cli_swift_pseudo_hierarchical_folders_directories.html
 
 use strict;
 use warnings;
@@ -9,9 +7,12 @@ use Path::Tiny;
 use File::Basename;
 use Text::ASCIITable;
 use Net::OpenStack::Swift;
+use Net::OpenStack::Swift::Util qw/debugf/;
 use Parallel::Fork::BossWorkerAsync;
+use Sys::CPU;
 
-use Data::Dumper;
+
+my $ASYNC = $ENV{OS_SWIFT_ASYNC} || 0;
 
 sub setup {
     my $c = shift;
@@ -105,17 +106,19 @@ sub list {
             @label = ('name', 'bytes', 'count');
         }
         else {
-            @label = ('name', 'bytes', 'content_type', 'last_modified', 'hash');
+            @label = ('name', 'bytes', 'content_type', 'last_modified');
         }
         $t = Text::ASCIITable->new({headingText => $heading_text});
         my $total_bytes = 0;
+        my $total_files = 0;
         for my $container (@{ $containers }) {
             $t->setCols(@label);
             $t->addRow(map { $container->{$_} } @label);
             $total_bytes += int($container->{bytes});
+            $total_files++;
         }
         $t->addRowLine();
-        $t->addRow('Total bytes', $total_bytes);
+        $t->addRow(sprintf("%s files, Total bytes", $total_files), $total_bytes);
     }
     return $t;
 }
@@ -203,7 +206,6 @@ sub download {
     die "ARGV" if scalar @ARGV >= 2;
     my $target = $ARGV[0] //= '';
 
-    #my ($container_name, $object_name) = split '/', $target;
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "container name is required." unless $container_name;
     if ($object_name) {
@@ -213,25 +215,21 @@ sub download {
         $object_name = '(.*?)'; 
     }
 
-    # todo: このへんたいわで[y/n]出すか?
     if (-d $container_name) {
-        #die "already exists directory [$container_name]\n";
+        print "Directory [${container_name}] already exists. Overwrite? [y/n] ";
+        my $yn = lc <STDIN>;
+        chomp $yn;
+        if ($yn eq 'n') {
+            exit(0);
+        }
     }
     else {
-        #todo: 複数階層の場合
-        mkdir "$container_name";
+        path($container_name)->mkpath;
     }
 
-
-    print "target: ", Dumper($target);
-    print "container_name:", Dumper($container_name);
-    print "object_name: ", Dumper($object_name);
-
-    # 一覧を取得して、ここから正規表現に一致するファイルだけ取る
-    #todo: *のみだったら全部取った方が早い
+    # find matche pattern
     my @matches = ();
     my ($headers, $containers) = $c->stash->{sw}->get_container(container_name => $container_name);
-    #print Dumper($containers);
     for my $container (@{ $containers }) {
         if ($container->{name} =~ /$object_name/) {
             push @matches, {
@@ -241,50 +239,59 @@ sub download {
             };
         }
     }
-    #print Dumper \@matches;
 
     # parallel
-    #my $bw = Parallel::Fork::BossWorkerAsync->new(
-    #    work_handler => sub {
-    #        my ($job) = @_;
-    #        my $fh = path($job->{container_name}, $job->{object_name})->openw;  #$binmode
-    #        my $etag = $c->stash->{sw}->get_object(
-    #            container_name => $job->{container_name}, 
-    #            object_name => $job->{object_name},
-    #            write_file => $fh,
-    #        );
-    #        return $job;
-    #    },  
-    #    result_handler => sub {
-    #        my ($job) = @_; 
-    #        printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
-    #        return $job;
-    #    },  
-    #    worker_count => 5,
-    #);
-    #$bw->add_work(@matches);
-    #while($bw->pending) {
-    #    my $ref = $bw->get_result;
-    #}
-    #$bw->shut_down;
-
-    # blocking
-    for my $job (@matches) {
-        print Dumper($job);
-        if ($job->{content_type} eq 'application/directory') {
-            path($job->{container_name}, $job->{object_name})->mkpath;
+    if ($ASYNC) {
+        debugf("CPUs: %s", Sys::CPU::cpu_count());
+        my $bwa = Parallel::Fork::BossWorkerAsync->new(
+            work_handler => sub {
+                my ($job) = @_;
+                if ($job->{content_type} eq 'application/directory') {
+                    path($job->{container_name}, $job->{object_name})->mkpath;
+                }
+                else {
+                    my $target_path = path($job->{container_name}, $job->{object_name});
+                    path($target_path->dirname)->mkpath;
+                    my $fh = $target_path->openw;  #$binmode
+                    my $etag = $c->stash->{sw}->get_object(
+                        container_name => $job->{container_name}, 
+                        object_name => $job->{object_name},
+                        write_file => $fh,
+                    );
+                }
+                return $job;
+            },  
+            result_handler => sub {
+                my ($job) = @_; 
+                printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
+                return $job;
+            },  
+            worker_count => Sys::CPU::cpu_count(),
+        );
+        $bwa->add_work(@matches);
+        while($bwa->pending) {
+            my $ref = $bwa->get_result;
         }
-        else {
-            my $fh = path($job->{container_name}, $job->{object_name})->openw;  #$binmode
-            my $etag = $c->stash->{sw}->get_object(
-                container_name => $job->{container_name}, 
-                object_name => $job->{object_name},
-                write_file => $fh,
-            );
-        }
-        printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
+        $bwa->shut_down;
     }
-    return undef;
+    # single
+    else {
+        for my $job (@matches) {
+            if ($job->{content_type} eq 'application/directory') {
+                path($job->{container_name}, $job->{object_name})->mkpath;
+            }
+            else {
+                my $fh = path($job->{container_name}, $job->{object_name})->openw;  #$binmode
+                my $etag = $c->stash->{sw}->get_object(
+                    container_name => $job->{container_name}, 
+                    object_name => $job->{object_name},
+                    write_file => $fh,
+                );
+            }
+            printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
+        }
+        return undef;
+    }
 }
 
 sub upload {
@@ -296,12 +303,6 @@ sub upload {
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "container name is required." unless $container_name;
 
-    print Dumper($container_name);
-    print Dumper($object_name);
-
-    #my @local_files = glob "${container_name}/*";
-    #print Dumper \@local_files;
-
     if ($object_name) {
         $object_name =~ s/\*/\(\.\*\?\)/g; 
     }
@@ -309,48 +310,71 @@ sub upload {
         $object_name = '(.*?)'; 
     }
 
-    print Dumper($container_name);
-    print Dumper($object_name);
-
-
     my @matches = ();
     my $iter = path($container_name)->iterator({
         recurse         => 1,
         follow_symlinks => 0,
     }); 
     while (my $local_path = $iter->()) {
-        print "local_path: ", Dumper($local_path->stringify);
-        #print "matche?: ", Dumper("$container_name/$object_name");
-        print "dir: ", Dumper($local_path->is_dir);
         my $partial = "$container_name/$object_name";
-        my $basename = basename($local_path->stringify);
         if ($local_path->stringify =~ /$partial/) {
-            push @matches, $local_path;
+            push @matches, {local_path => $local_path};
         }
     }
+    return unless scalar @matches;
 
-    # put object
-    #todo: top level containerだけは作っておく必要がある
+    # create top level container
+    $c->stash->{sw}->put_container(container_name => $container_name);                
+
     my ($headers, $containers);
-    if (scalar @matches) {
-        for (@matches) {
-            print "path: ", Dumper $_->stringify;
-            my ($up_container, $up_object) = split '/', $_->stringify, 2;
-            print "path dirname: ", Dumper $up_container;
-            print "path basename: ", Dumper $up_object;
-            
-            if ($_->is_dir) {
-                my $res = $c->stash->{sw}->put_container(container_name => $_->stringify);                
+    if ($ASYNC) {
+        debugf("CPUs: %s", Sys::CPU::cpu_count());
+        my $bwa = Parallel::Fork::BossWorkerAsync->new(
+            work_handler => sub {
+                my ($job) = @_;
+                my ($up_container, $up_object) = split '/', $job->{local_path}->stringify, 2;
+                $job->{container_name} = $up_container;
+                $job->{object_name}    = $up_object;
+                if ($job->{local_path}->is_dir) {
+                    my $res = $c->stash->{sw}->put_container(container_name => $job->{local_path}->stringify);                
+                }
+                else {
+                    my $fh = $job->{local_path}->openr;  #$binmode
+                    my $etag = $c->stash->{sw}->put_object(
+                        container_name => $up_container, object_name => $up_object, 
+                        content => $fh, content_length => -s $job->{local_path}->absolute);
+                }
+                return $job;
+            },  
+            result_handler => sub {
+                my ($job) = @_; 
+                printf "uploaded %s/%s\n", $job->{container_name}, $job->{object_name};
+                return $job;
+            },  
+            worker_count => Sys::CPU::cpu_count(),
+        );
+        $bwa->add_work(@matches);
+        while($bwa->pending) {
+            my $ref = $bwa->get_result;
+        }
+        $bwa->shut_down;
+    }
+    else {
+        for my $job (@matches) {
+            my ($up_container, $up_object) = split '/', $job->{local_path}->stringify, 2;
+            $job->{container_name} = $up_container;
+            $job->{object_name}    = $up_object;
+            if ($job->{local_path}->is_dir) {
+                my $res = $c->stash->{sw}->put_container(container_name => $job->{local_path}->stringify);                
             }
             else {
-                my $fh = $_->openr;  #$binmode
+                my $fh = $job->{local_path}->openr;  #$binmode
                 my $etag = $c->stash->{sw}->put_object(
                     container_name => $up_container, object_name => $up_object, 
-                    content => $fh, content_length => -s $_->absolute);
-                print "uploaded $up_container/$up_object\n";
+                    content => $fh, content_length => -s $job->{local_path}->absolute);
             }
+            printf "uploaded %s/%s\n", $job->{container_name}, $job->{object_name};
         }
     }
-
     return undef;
 } 

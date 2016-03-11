@@ -49,6 +49,9 @@
             "JSON" : "0",
             "Log::Minimal" : "0",
             "Mouse" : "0",
+            "Parallel::Fork::BossWorkerAsync" : "0",
+            "Path::Tiny" : "0",
+            "Sys::CPU" : "0",
             "Text::ASCIITable" : "0",
             "URI::Escape" : "0",
             "namespace::clean" : "0"

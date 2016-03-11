@@ -258,7 +258,6 @@ sub head_container {
 
 sub put_container {
     my $self = shift;
-    use Data::Dumper;
     my $rule = Data::Validator->new(
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
