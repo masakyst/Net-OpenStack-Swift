@@ -230,15 +230,16 @@ cli examples
     $ swift.pl get container1/hello.txt > hello.txt (download file)
     $ swift.pl delete container1/hello.txt
     $ swift.pl delete container1
+
+multi cpu support (parallel downloads and uploads)
+
     $ swift.pl donwload 'container1/*' (require quoting!)
     $ swift.pl upload 'container1/*' (require quoting!)
 
-parallels beta support
+creating a .swift.pl.conf file in the user's home directory
 
-    environment OS_SWIFT_ASYNC=1
-
-    $ OS_SWIFT_ASYNC=1 swift.pl donwload 'container1/*'
-    $ OS_SWIFT_ASYNC=1 swift.pl upload 'container1/*'
+    $ cat .swift.pl.conf 
+    timeout=200
 
 # Debug
 

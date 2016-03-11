@@ -8,7 +8,7 @@ use Data::Validator;
 use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape debugf/;
 use Net::OpenStack::Swift::InnerKeystone;
 use namespace::clean -except => 'meta';
-our $VERSION = "0.07";
+our $VERSION = "0.08";
 
 
 subtype 'Path' => as 'Path::Tiny';
@@ -16,10 +16,10 @@ coerce  'Path' => from 'Str' => via { Path::Tiny->new($_) };
 
 
 has auth_version => (is => 'rw', required => 1, default => sub {"2.0"});
-has auth_url     => (is => 'rw', required => 1, default => sub { $ENV{OS_AUTH_URL} });
-has user         => (is => 'rw', required => 1, default => sub { $ENV{OS_USERNAME} });
-has password     => (is => 'rw', required => 1, default => sub { $ENV{OS_PASSWORD} });
-has tenant_name  => (is => 'rw', required => 1, default => sub { $ENV{OS_TENANT_NAME} });
+has auth_url     => (is => 'rw', required => 1, default => sub { $ENV{OS_AUTH_URL}    || '' });
+has user         => (is => 'rw', required => 1, default => sub { $ENV{OS_USERNAME}    || '' });
+has password     => (is => 'rw', required => 1, default => sub { $ENV{OS_PASSWORD}    || '' });
+has tenant_name  => (is => 'rw', required => 1, default => sub { $ENV{OS_TENANT_NAME} || '' });
 has storage_url  => (is => 'rw');
 has token        => (is => 'rw');
 has agent_options => (is => 'rw', isa => 'HashRef', default => sub{+{ timeout => 10 }});
@@ -802,6 +802,10 @@ multi cpu support (parallel downloads and uploads)
     $ swift.pl donwload 'container1/*' (require quoting!)
     $ swift.pl upload 'container1/*' (require quoting!)
 
+creating a .swift.pl.conf file in the user's home directory
+
+    $ cat .swift.pl.conf 
+    timeout=200
 
 =head1 Debug
 
