@@ -12,6 +12,7 @@ use Parallel::Fork::BossWorkerAsync;
 use Sys::CPU;
 use JSON qw/encode_json decode_json/;
 
+use Data::Dumper;
 
 my $ASYNC = $ENV{OS_SWIFT_ASYNC} || 1;
 
@@ -28,19 +29,24 @@ sub setup {
         'upload'   => 'Upload container/object.',
     });
 
-    $c->stash->{sw} = Net::OpenStack::Swift->new;
+    my $sw = Net::OpenStack::Swift->new;
     $c->stash->{storage_url} = undef;
     $c->stash->{token}       = undef;
 
     my $config_path = path($ENV{HOME}, '.swift.pl.conf');
     if ($config_path->exists) {
         $c->load_config($config_path);
-        $c->config->{worker} ||= Sys::CPU::cpu_count();
-        $c->stash->{sw}->agent_options({
+        $c->config->{workers} ||= Sys::CPU::cpu_count();
+        $sw->agent_options({
             timeout    => $c->config->{timeout},
             user_agent => $c->config->{user_agent},
         });
+        $sw->auth_url($c->config->{os_auth_url})       unless $sw->auth_url;
+        $sw->user($c->config->{os_username})           unless $sw->user;
+        $sw->password($c->config->{os_password})       unless $sw->password;
+        $sw->tenant_name($c->config->{os_tenant_name}) unless $sw->tenant_name;
     }
+    $c->stash->{sw} = $sw;
 }
 
 sub _auth {
@@ -306,7 +312,7 @@ sub download {
                 printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
                 return $job;
             },  
-            worker_count => $c->config->{worker},
+            worker_count => $c->config->{workers},
         );
         $bwa->add_work(@matches);
         while($bwa->pending) {
@@ -390,7 +396,7 @@ sub upload {
                 printf "uploaded %s/%s\n", $job->{container_name}, $job->{object_name};
                 return $job;
             },  
-            worker_count => $c->config->{worker},
+            worker_count => $c->config->{workers},
         );
         $bwa->add_work(@matches);
         while($bwa->pending) {
