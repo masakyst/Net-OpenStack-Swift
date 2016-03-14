@@ -12,8 +12,6 @@ use Parallel::Fork::BossWorkerAsync;
 use Sys::CPU;
 use JSON qw/encode_json decode_json/;
 
-use Data::Dumper;
-
 
 my $ASYNC = $ENV{OS_SWIFT_ASYNC} || 1;
 
@@ -37,6 +35,7 @@ sub setup {
     my $config_path = path($ENV{HOME}, '.swift.pl.conf');
     if ($config_path->exists) {
         $c->load_config($config_path);
+        $c->config->{worker} ||= Sys::CPU::cpu_count();
         $c->stash->{sw}->agent_options({
             timeout    => $c->config->{timeout},
             user_agent => $c->config->{user_agent},
@@ -284,7 +283,6 @@ sub download {
 
     # parallel
     if ($ASYNC) {
-        debugf("CPUs: %s", Sys::CPU::cpu_count());
         my $bwa = Parallel::Fork::BossWorkerAsync->new(
             work_handler => sub {
                 my ($job) = @_;
@@ -308,7 +306,7 @@ sub download {
                 printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
                 return $job;
             },  
-            worker_count => Sys::CPU::cpu_count(),
+            worker_count => $c->config->{worker},
         );
         $bwa->add_work(@matches);
         while($bwa->pending) {
@@ -370,7 +368,6 @@ sub upload {
 
     my ($headers, $containers);
     if ($ASYNC) {
-        debugf("CPUs: %s", Sys::CPU::cpu_count());
         my $bwa = Parallel::Fork::BossWorkerAsync->new(
             work_handler => sub {
                 my ($job) = @_;
@@ -393,7 +390,7 @@ sub upload {
                 printf "uploaded %s/%s\n", $job->{container_name}, $job->{object_name};
                 return $job;
             },  
-            worker_count => Sys::CPU::cpu_count(),
+            worker_count => $c->config->{worker},
         );
         $bwa->add_work(@matches);
         while($bwa->pending) {
