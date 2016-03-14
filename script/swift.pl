@@ -10,6 +10,9 @@ use Net::OpenStack::Swift;
 use Net::OpenStack::Swift::Util qw/debugf/;
 use Parallel::Fork::BossWorkerAsync;
 use Sys::CPU;
+use JSON qw/encode_json decode_json/;
+
+use Data::Dumper;
 
 
 my $ASYNC = $ENV{OS_SWIFT_ASYNC} || 1;
@@ -21,6 +24,7 @@ sub setup {
         'list'     => 'Show container/object.',
         'get'      => 'Get object content.',
         'put'      => 'Create or replace object and container.',
+        'post'     => 'Create or update metadata.',
         'delete'   => 'Delete container/object.',
         'download' => 'Download container/object.',
         'upload'   => 'Upload container/object.',
@@ -86,7 +90,7 @@ App::Rad->run;
 sub list {
     _auth(@_);
     my $c = shift;
-    my $target = $ARGV[0] //= '/';
+    my $target = $ARGV[0] ||= '/';
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
 
     my $t;
@@ -135,7 +139,7 @@ sub list {
 sub get {
     _auth(@_);
     my $c = shift;
-    my $target = $ARGV[0] //= '';
+    my $target = $ARGV[0] ||= '';
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "object name is required." unless $object_name;
 
@@ -149,8 +153,8 @@ sub get {
 sub put {
     _auth(@_);
     my $c = shift;
-    my $target = $ARGV[0] //= '';
-    my $local_path = $ARGV[1] //= '';
+    my $target = $ARGV[0] ||= '';
+    my $local_path = $ARGV[1] ||= '';
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "container name is required." unless $container_name;
 
@@ -180,10 +184,39 @@ sub put {
     return $t;
 }
 
+sub post {
+    _auth(@_);
+    my $c = shift;
+    my $target = $ARGV[0] ||= '';
+    my $x_headers = decode_json($ARGV[1] ||= '{}');
+    my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
+    die "container name is required." unless $container_name;
+
+    my $t;
+    my ($headers, $containers);
+    # post object
+    if ($object_name) {
+        $headers = $c->stash->{sw}->post_object(container_name => $container_name, 
+            object_name => $object_name,
+            headers => $x_headers);
+    }
+    # post container
+    else {
+        $headers = $c->stash->{sw}->post_container(container_name => $container_name, 
+            headers => $x_headers);
+    }
+    $t = Text::ASCIITable->new({headingText => 'response header'});
+    $t->setCols('key', 'value');
+    for my $key (sort keys %{ $headers }) {
+        $t->addRow($key, $headers->{$key});
+    }
+    return $t;
+}
+
 sub delete {
     _auth(@_);
     my $c = shift;
-    my $target = $ARGV[0] //= '';
+    my $target = $ARGV[0] ||= '';
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
 
     my $t;
@@ -213,7 +246,7 @@ sub download {
     _auth(@_);
     my $c = shift;
     die "ARGV" if scalar @ARGV >= 2;
-    my $target = $ARGV[0] //= '';
+    my $target = $ARGV[0] ||= '';
 
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "container name is required." unless $container_name;
@@ -307,7 +340,7 @@ sub upload {
     _auth(@_);
     my $c = shift;
     die "ARGV" if scalar @ARGV >= 2;
-    my $target = $ARGV[0] //= '';
+    my $target = $ARGV[0] ||= '';
 
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
     die "container name is required." unless $container_name;
