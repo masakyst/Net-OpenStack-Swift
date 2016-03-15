@@ -40,17 +40,16 @@ sub _request {
     my $self = shift;
     my $args = shift;
     
-    my $furl_options = +{
-        timeout => $self->agent_options->{timeout} || 10
-    };
-    $furl_options->{agent} ||= $self->agent_options->{user_agent};
-    my $furl = Furl->new(%{$furl_options});
-
-    # single instance
-    #my $res = $self->agent->request(
+    #my $furl_options = +{
+    #    timeout => $self->agent_options->{timeout} || 10
+    #};
+    #$furl_options->{agent} ||= $self->agent_options->{user_agent};
+    #my $furl = Furl->new(%{$furl_options});
 
     # parallel instance
-    my $res = $furl->request(
+    #my $res = $furl->request(
+    # single instance
+    my $res = $self->agent->request(
         method          => $args->{method},
         url             => $args->{url},
         special_headers => $args->{special_headers},

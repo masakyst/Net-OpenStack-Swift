@@ -12,7 +12,6 @@ use Parallel::Fork::BossWorkerAsync;
 use Sys::CPU;
 use JSON qw/encode_json decode_json/;
 
-use Data::Dumper;
 
 my $ASYNC = $ENV{OS_SWIFT_ASYNC} || 1;
 
@@ -20,6 +19,7 @@ sub setup {
     my $c = shift;
 
     $c->register_commands({
+        'version'  => 'Net::OpenStack::Swift version.',
         'list'     => 'Show container/object.',
         'get'      => 'Get object content.',
         'put'      => 'Create or replace object and container.',
@@ -93,6 +93,9 @@ sub _path_parts {
 
 App::Rad->run;
 
+sub version {
+    sprintf "Net::OpenStack::Swift %s", $Net::OpenStack::Swift::VERSION;
+}
 
 sub list {
     _auth(@_);
@@ -235,27 +238,59 @@ sub delete {
     my $target = $ARGV[0] ||= '';
     my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
 
+    # find objects matche pattern
+    my @matche_objects    = ();
+    my @matche_containers = ();
+    if ($object_name) {
+        $object_name =~ s/\*/\(\.\*\?\)/g; 
+        my ($headers, $containers) = $c->stash->{sw}->get_container(container_name => $container_name);
+        for my $container (@{ $containers }) {
+            if ($container->{content_type} eq 'application/directory') {
+                push @matche_containers, {
+                    container_name => $container_name, 
+                    object_name    => $container->{name},
+                    content_type   => $container->{content_type}
+                };
+            } 
+            elsif ($container->{name} =~ /$object_name/) {
+                push @matche_objects, {
+                    container_name => $container_name, 
+                    object_name    => $container->{name},
+                    content_type   => $container->{content_type}
+                };
+            }
+        }
+    }
+
     my $t;
     # delete object
-    if ($object_name) {
-        my ($headers, $containers) = $c->stash->{sw}->delete_object(
-            container_name => $container_name,
-            object_name    => $object_name
-        );
-        $t = Text::ASCIITable->new({headingText => 'response header'});
-        $t->setCols(sort keys %{ $headers });
-        $t->addRow(map { $headers->{$_} } sort keys %{ $headers });
+    if (scalar @matche_objects) {
+        for my $obj (@matche_objects) {
+            my ($headers, $containers) = $c->stash->{sw}->delete_object(
+                container_name => $obj->{container_name},
+                object_name    => $obj->{object_name}
+            );
+            printf "deleted object %s/%s\n", $obj->{container_name}, $obj->{object_name};
+        }
     }
+    if (scalar @matche_containers) {
+        for my $obj (reverse @matche_containers) {
+            my ($headers, $containers) = $c->stash->{sw}->delete_object(
+                container_name => $obj->{container_name},
+                object_name    => $obj->{object_name}
+            );
+            printf "deleted object %s/%s\n", $obj->{container_name}, $obj->{object_name};
+        }
+    }
+
     # delete container
-    else {
+    unless (scalar(@matche_objects) || scalar(@matche_containers)) {
         my ($headers, $containers) = $c->stash->{sw}->delete_container(
             container_name => $container_name
         );
-        $t = Text::ASCIITable->new({headingText => 'response header'});
-        $t->setCols(sort keys %{ $headers });
-        $t->addRow(map { $headers->{$_} } sort keys %{ $headers });
+        printf "deleted container %s\n", $container_name;
     }
-    return $t;
+    return undef;
 }
 
 sub download {
