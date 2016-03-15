@@ -240,6 +240,12 @@ creating a .swift.pl.conf file in the user's home directory
 
     $ cat .swift.pl.conf 
     timeout=200
+    user_agent=perl Net::OpenStack::Swift
+    workers=8
+    os_auth_url=
+    os_tenant_name=
+    os_username=
+    os_password=
 
 # Debug
 

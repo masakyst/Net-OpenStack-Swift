@@ -64,6 +64,7 @@ sub _path_parts {
     my ($container_name, $object_name);
     my $prefix    = '';
     my $delimiter = '/';
+    my $top_level = 0;
 
     # directory
     if ($target =~ /\/$/) {
@@ -78,6 +79,7 @@ sub _path_parts {
         # top level container
         if ($path->dirname eq '.') {
             $container_name = $path->basename;
+            $top_level = 1;
         }
         # other objects
         else {
@@ -86,7 +88,7 @@ sub _path_parts {
             $object_name    = $parts[1];
         }
     }
-    return ($container_name, $object_name, $prefix, $delimiter);
+    return ($container_name, $object_name, $prefix, $delimiter, $top_level);
 }
 
 App::Rad->run;
@@ -96,7 +98,7 @@ sub list {
     _auth(@_);
     my $c = shift;
     my $target = $ARGV[0] ||= '/';
-    my ($container_name, $object_name, $prefix, $delimiter) = _path_parts($target);
+    my ($container_name, $object_name, $prefix, $delimiter, $top_level) = _path_parts($target);
 
     my $t;
     # head object
@@ -108,7 +110,16 @@ sub list {
             $t->addRow($key, $headers->{$key});
         }
     }
-    # get_container
+    # head container
+    elsif ($top_level) {
+        my $headers = $c->stash->{sw}->head_container(container_name => $container_name);
+        $t = Text::ASCIITable->new({headingText => "${object_name} object"});
+        $t->setCols('key', 'value');
+        for my $key (sort keys %{ $headers }) {
+            $t->addRow($key, $headers->{$key});
+        }
+    }
+    # get container
     else {
         my ($headers, $containers) = $c->stash->{sw}->get_container(
             container_name => $container_name,
@@ -132,7 +143,7 @@ sub list {
         for my $container (@{ $containers }) {
             $t->setCols(@label);
             $t->addRow(map { $container->{$_} } @label);
-            $total_bytes += int($container->{bytes});
+            $total_bytes += int($container->{bytes} || 0);
             $total_files++;
         }
         $t->addRowLine();
