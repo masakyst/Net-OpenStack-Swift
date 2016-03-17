@@ -8,7 +8,7 @@ use Data::Validator;
 use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape debugf/;
 use Net::OpenStack::Swift::InnerKeystone;
 use namespace::clean -except => 'meta';
-our $VERSION = "0.09";
+our $VERSION = "0.10";
 
 
 subtype 'Path' => as 'Path::Tiny';
@@ -434,7 +434,7 @@ sub put_object {
         object_name    => { isa => 'Str'},
         content        => { isa => 'Str|FileHandle'},
         content_length => { isa => 'Int', default => sub { 0 } },
-        content_type   => { isa => 'Str', default => 'application/octet-stream'},
+        content_type   => { isa => 'Str', default => ''},
         etag           => { isa => 'Str', default => undef },
         query_string   => { isa => 'Str', default => sub {''} },
     );
@@ -759,7 +759,7 @@ Create or replace object.
 =item content_type: Str
 
 Optional.
-default 'application/octet-stream'
+default none
 
 =back
 

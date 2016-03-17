@@ -197,7 +197,7 @@ Create or replace object.
 - content\_type: Str
 
     Optional.
-    default 'application/octet-stream'
+    default none
 
 ## post\_object
 

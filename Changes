@@ -1,6 +1,7 @@
 Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
+    - Fixed a bug default content_type
 
 0.09 2016-03-17T03:11:51Z
     - Implemented post metadata
