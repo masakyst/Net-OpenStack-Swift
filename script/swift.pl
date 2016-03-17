@@ -13,8 +13,6 @@ use Sys::CPU;
 use JSON qw/encode_json decode_json/;
 
 
-my $ASYNC = $ENV{OS_SWIFT_ASYNC} || 1;
-
 sub setup {
     my $c = shift;
 
@@ -29,7 +27,6 @@ sub setup {
         'upload'   => 'Upload container/object.',
     });
 
-    my $sw = Net::OpenStack::Swift->new;
     $c->stash->{storage_url} = undef;
     $c->stash->{token}       = undef;
 
@@ -37,16 +34,23 @@ sub setup {
     if ($config_path->exists) {
         $c->load_config($config_path);
         $c->config->{workers} ||= Sys::CPU::cpu_count();
-        $sw->agent_options({
-            timeout    => $c->config->{timeout},
-            user_agent => $c->config->{user_agent},
-        });
-        $sw->auth_url($c->config->{os_auth_url})       unless $sw->auth_url;
-        $sw->user($c->config->{os_username})           unless $sw->user;
-        $sw->password($c->config->{os_password})       unless $sw->password;
-        $sw->tenant_name($c->config->{os_tenant_name}) unless $sw->tenant_name;
     }
-    $c->stash->{sw} = $sw;
+ 
+    $c->stash->{sw} ||= _sw_instance($c);
+}
+
+sub _sw_instance {
+    my $c = shift; 
+    my $sw = Net::OpenStack::Swift->new;
+    $sw->agent_options({
+        timeout    => $c->config->{timeout},
+        user_agent => $c->config->{user_agent},
+    });
+    $sw->auth_url($c->config->{os_auth_url})       unless $sw->auth_url;
+    $sw->user($c->config->{os_username})           unless $sw->user;
+    $sw->password($c->config->{os_password})       unless $sw->password;
+    $sw->tenant_name($c->config->{os_tenant_name}) unless $sw->tenant_name;
+    return $sw;
 }
 
 sub _auth {
@@ -333,57 +337,43 @@ sub download {
         }
     }
 
-    # parallel
-    if ($ASYNC) {
-        my $bwa = Parallel::Fork::BossWorkerAsync->new(
-            work_handler => sub {
-                my ($job) = @_;
-                if ($job->{content_type} eq 'application/directory') {
-                    path($job->{container_name}, $job->{object_name})->mkpath;
-                }
-                else {
-                    my $target_path = path($job->{container_name}, $job->{object_name});
-                    path($target_path->dirname)->mkpath;
-                    my $fh = $target_path->openw;  #$binmode
-                    my $etag = $c->stash->{sw}->get_object(
-                        container_name => $job->{container_name}, 
-                        object_name => $job->{object_name},
-                        write_file => $fh,
-                    );
-                }
-                return $job;
-            },  
-            result_handler => sub {
-                my ($job) = @_; 
-                printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
-                return $job;
-            },  
-            worker_count => $c->config->{workers},
-        );
-        $bwa->add_work(@matches);
-        while($bwa->pending) {
-            my $ref = $bwa->get_result;
-        }
-        $bwa->shut_down;
-    }
-    # single
-    else {
-        for my $job (@matches) {
+    my $swi;
+    my $bwa = Parallel::Fork::BossWorkerAsync->new(
+        init_handler => sub {
+            $swi = _sw_instance($c);
+            $swi->auth_keystone;
+        },
+        work_handler => sub {
+            my ($job) = @_;
             if ($job->{content_type} eq 'application/directory') {
                 path($job->{container_name}, $job->{object_name})->mkpath;
             }
             else {
-                my $fh = path($job->{container_name}, $job->{object_name})->openw;  #$binmode
-                my $etag = $c->stash->{sw}->get_object(
+                my $target_path = path($job->{container_name}, $job->{object_name});
+                path($target_path->dirname)->mkpath;
+                my $fh = $target_path->openw;  #$binmode
+                my $etag = $swi->get_object(
                     container_name => $job->{container_name}, 
                     object_name => $job->{object_name},
                     write_file => $fh,
                 );
             }
+            return $job;
+        },  
+        result_handler => sub {
+            my ($job) = @_; 
             printf "downloaded %s/%s\n", $job->{container_name}, $job->{object_name};
-        }
-        return undef;
+            return $job;
+        },  
+        worker_count => $c->config->{workers},
+    );
+    $bwa->add_work(@matches);
+    while($bwa->pending) {
+        my $ref = $bwa->get_result;
     }
+    $bwa->shut_down;
+
+    return undef;
 }
 
 sub upload {
@@ -419,53 +409,40 @@ sub upload {
     $c->stash->{sw}->put_container(container_name => $container_name);                
 
     my ($headers, $containers);
-    if ($ASYNC) {
-        my $bwa = Parallel::Fork::BossWorkerAsync->new(
-            work_handler => sub {
-                my ($job) = @_;
-                my ($up_container, $up_object) = split '/', $job->{local_path}->stringify, 2;
-                $job->{container_name} = $up_container;
-                $job->{object_name}    = $up_object;
-                if ($job->{local_path}->is_dir) {
-                    my $res = $c->stash->{sw}->put_container(container_name => $job->{local_path}->stringify);                
-                }
-                else {
-                    my $fh = $job->{local_path}->openr;  #$binmode
-                    my $etag = $c->stash->{sw}->put_object(
-                        container_name => $up_container, object_name => $up_object, 
-                        content => $fh, content_length => -s $job->{local_path}->absolute);
-                }
-                return $job;
-            },  
-            result_handler => sub {
-                my ($job) = @_; 
-                printf "uploaded %s/%s\n", $job->{container_name}, $job->{object_name};
-                return $job;
-            },  
-            worker_count => $c->config->{workers},
-        );
-        $bwa->add_work(@matches);
-        while($bwa->pending) {
-            my $ref = $bwa->get_result;
-        }
-        $bwa->shut_down;
-    }
-    else {
-        for my $job (@matches) {
+    my $swi;
+    my $bwa = Parallel::Fork::BossWorkerAsync->new(
+        init_handler => sub {
+            $swi = _sw_instance($c);
+            $swi->auth_keystone;
+        },
+        work_handler => sub {
+            my ($job) = @_;
             my ($up_container, $up_object) = split '/', $job->{local_path}->stringify, 2;
             $job->{container_name} = $up_container;
             $job->{object_name}    = $up_object;
             if ($job->{local_path}->is_dir) {
-                my $res = $c->stash->{sw}->put_container(container_name => $job->{local_path}->stringify);                
+                my $res = $swi->put_container(container_name => $job->{local_path}->stringify);                
             }
             else {
                 my $fh = $job->{local_path}->openr;  #$binmode
-                my $etag = $c->stash->{sw}->put_object(
+                my $etag = $swi->put_object(
                     container_name => $up_container, object_name => $up_object, 
                     content => $fh, content_length => -s $job->{local_path}->absolute);
             }
+            return $job;
+        },  
+        result_handler => sub {
+            my ($job) = @_; 
             printf "uploaded %s/%s\n", $job->{container_name}, $job->{object_name};
-        }
+            return $job;
+        },  
+        worker_count => $c->config->{workers},
+    );
+    $bwa->add_work(@matches);
+    while($bwa->pending) {
+        my $ref = $bwa->get_result;
     }
+    $bwa->shut_down;
+
     return undef;
 } 
