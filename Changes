@@ -1,6 +1,8 @@
 Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
+
+0.10 2016-03-17T05:40:37Z
     - Fixed a bug default content_type
 
 0.09 2016-03-17T03:11:51Z
