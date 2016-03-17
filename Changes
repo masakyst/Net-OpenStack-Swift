@@ -1,6 +1,10 @@
 Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
+    - Implemented post metadata
+    - Add .swift.pl.conf os_* auth parameters
+    - Add support recursively delete
+    - Modify parallel requests
 
 0.08 2016-03-11T07:59:10Z
     - Add config loader (~/.swift.pl.conf)

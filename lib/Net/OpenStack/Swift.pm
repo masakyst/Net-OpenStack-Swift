@@ -8,7 +8,7 @@ use Data::Validator;
 use Net::OpenStack::Swift::Util qw/uri_escape uri_unescape debugf/;
 use Net::OpenStack::Swift::InnerKeystone;
 use namespace::clean -except => 'meta';
-our $VERSION = "0.08";
+our $VERSION = "0.09";
 
 
 subtype 'Path' => as 'Path::Tiny';
@@ -795,6 +795,8 @@ cli examples
     $ swift.pl get container1/hello.txt > hello.txt (download file)
     $ swift.pl delete container1/hello.txt
     $ swift.pl delete container1
+    $ swift.pl delete 'container1/*'  (require quoting!)
+    $ swift.pl post static '{"X-Container-Read":".r:*"}'
 
 multi cpu support (parallel downloads and uploads)
 

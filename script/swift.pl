@@ -7,7 +7,6 @@ use Path::Tiny;
 use File::Basename;
 use Text::ASCIITable;
 use Net::OpenStack::Swift;
-use Net::OpenStack::Swift::Util qw/debugf/;
 use Parallel::Fork::BossWorkerAsync;
 use Sys::CPU;
 use JSON qw/encode_json decode_json/;
