@@ -379,7 +379,7 @@ sub get_object {
     croak "Object GET failed: ".$res->status_line unless $res->is_success;
     my @headers = $res->headers->flatten();
     debugf("get_object() response headers %s", \@headers);
-    debugf("get_object() response body length %s byte", length $res->content);
+    debugf("get_object() response body length %s byte", length($res->content || 0));
     my %headers = @headers;
     my $etag = $headers{etag};
     $etag =~ s/^\s*(.*?)\s*$/$1/; # delete spaces
