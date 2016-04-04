@@ -177,13 +177,66 @@ sub get_container {
         url            => { isa => 'Str', default => $self->storage_url},
         token          => { isa => 'Str', default => $self->token },
         container_name => { isa => 'Path', coerce => 1 },
-        marker         => { isa => 'Str', default => undef },
-        limit          => { isa => 'Int', default => undef },
-        prefix         => { isa => 'Str', default => undef },
-        delimiter      => { isa => 'Str', default => undef },
-        end_marker     => { isa => 'Str', default => undef },
+        marker         => { isa => 'Str', default => '', coerce => 1 },
+        limit          => { isa => 'Int', default => 0,  coerce => 1 },
+        prefix         => { isa => 'Str', default => '', coerce => 1 },
+        delimiter      => { isa => 'Str', default => '', coerce => 1 },
+        end_marker     => { isa => 'Str', default => '', coerce => 1 },
+        full_listing   => { isa => 'Bool', default => 0, coerce => 1 },
     );
     my $args = $rule->validate(@_);
+
+    if ($args->{full_listing}) {
+        my @full_containers = ();
+        my ($rv_h, $rv_c) = __PACKAGE__->new->get_container(
+            url            => $args->{url},
+            token          => $args->{token},
+            container_name => $args->{container_name},
+            marker         => $args->{marker},
+            limit          => $args->{limit},
+            prefix         => $args->{prefix},
+            delimiter      => $args->{delimiter},
+            end_marker     => $args->{end_marker},
+        );  
+		my $total_count = int $rv_h->{'x-container-object-count'};
+        my $last_n      = scalar @{$rv_c};
+        if (scalar @{$rv_c}) {
+            push @full_containers, @{$rv_c};
+        }
+		until ($total_count == scalar @full_containers) {
+            # find marker
+			my $marker;
+			unless ($args->{delimiter}) {
+				$marker = $full_containers[scalar(@full_containers) - 1]->{name};
+			} 
+			else {
+				if (exists $full_containers[scalar(@full_containers) - 1]->{name}) {
+					$marker = $full_containers[scalar(@full_containers) - 1]->{name};
+				}
+				else {
+					$marker = $full_containers[scalar(@full_containers) - 1]->{subdir};
+				}
+			}
+            # 
+			my ($rv_h2, $rv_c2) = __PACKAGE__->new->get_container(
+				url            => $args->{url},
+				token          => $args->{token},
+				container_name => $args->{container_name},
+				marker         => $marker,
+				limit          => $args->{limit},
+				prefix         => $args->{prefix},
+				delimiter      => $args->{delimiter},
+				end_marker     => $args->{end_marker},
+			);  
+			if (scalar @{$rv_c2}) {
+				push @full_containers, @{$rv_c2};
+			}
+			else {
+				last;
+			}
+		}
+    	return ($rv_h, \@full_containers);
+    }
 
     # make query strings
     my @qs = ('format=json');
