@@ -2,6 +2,10 @@ Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
 
+0.11 2016-04-04T05:10:19Z
+    - Implemented full listing
+    - Fixed Use of uninitialized value in length warning #21
+
 0.10 2016-03-17T05:40:37Z
     - Fixed a bug default content_type
 
