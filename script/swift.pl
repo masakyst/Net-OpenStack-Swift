@@ -323,10 +323,15 @@ sub download {
         path($container_name)->mkpath;
     }
 
+    use Data::Dumper;
     # find matche pattern
     my @matches = ();
     my ($headers, $containers) = $c->stash->{sw}->get_container(container_name => $container_name);
+    print Dumper(scalar @{$containers});
+    exit;
+    print Dumper($object_name);
     for my $container (@{ $containers }) {
+        print Dumper($container->{name});
         if ($container->{name} =~ /$object_name/) {
             push @matches, {
                 container_name => $container_name, 
@@ -335,6 +340,8 @@ sub download {
             };
         }
     }
+    #print Dumper(\@matches);
+    exit;
 
     my $swi;
     my $bwa = Parallel::Fork::BossWorkerAsync->new(
