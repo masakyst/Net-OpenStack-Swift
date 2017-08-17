@@ -1,6 +1,8 @@
 Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
+
+0.12 2017-08-17T01:43:11Z
     - swift.pl supports v1.0
 
 0.11 2016-04-04T05:10:19Z
