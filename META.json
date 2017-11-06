@@ -83,8 +83,8 @@
    "x_contributors" : [
       "RenatoCRON <renato.cron@gmail.com>",
       "yasu47b <yasu47b@gmail.com>",
-      "Masaaki Saito <masakyst.mobile@gmail.com>",
-      "Marios Titas <redneb@gmx.com>"
+      "Marios Titas <redneb@gmx.com>",
+      "Masaaki Saito <masakyst.mobile@gmail.com>"
    ],
    "x_serialization_backend" : "JSON::PP version 2.27400"
 }
