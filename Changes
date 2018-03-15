@@ -1,6 +1,7 @@
 Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
+    - proper handling of V1 auth (bork1n) #26
 
 0.13 2017-11-06T06:40:55Z
     - Add option to set the region #25
