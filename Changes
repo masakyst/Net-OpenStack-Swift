@@ -1,6 +1,7 @@
 Revision history for Perl extension Net-OpenStack-Swift
 
 {{$NEXT}}
+    - put_object: support sending custom request headers (redneb) #27
 
 0.14 2018-03-15T08:40:11Z
     - proper handling of V1 auth (bork1n) #26
